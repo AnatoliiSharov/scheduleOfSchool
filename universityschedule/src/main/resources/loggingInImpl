@@ -1,0 +1,21 @@
+
+
+private static final Logger logger = LoggerFactory.getLogger(TeacherDaoUtil.class);
+logger.debug("findById for Teacher started with id = {}", id);
+logger.debug("findById for Teacher return {} with id = {}", "EMPTY", id);
+logger.error("findById for Teacher has exception {} and return {} with id = {}", e, "EMPTY", id);
+
+logger.debug("findAll for Teacher started");
+
+logger.debug("deleteById for Teacher started with id = {}", id);
+
+logger.debug("findByName for Teacher started with name = {}", name);
+logger.debug("findByName for Teacher return {} with name = {}", "EMPTY", name);
+logger.error("findById for Teacher has exception {} and return {} with name = {}", e, "EMPTY", name);
+
+logger.debug("update for Teacher started with Teacher = {}", entity);
+logger.error("update for Teacher {} with Teacher = {}", "Unable to update Teacher ", entity);
+logger.debug("update for Teacher was success with result = {}", entity);
+
+logger.debug("create for Teacher started with Teacher = {}", entity);
+logger.debug("create for Teacher was success with result = {}", entity);
