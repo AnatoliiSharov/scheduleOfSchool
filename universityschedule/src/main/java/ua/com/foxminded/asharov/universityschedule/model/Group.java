@@ -22,10 +22,10 @@ public class Group extends AbstractEntity<Long> {
     public Group() {
         this(null, null);
     }
-    
+
     public Group getByIdFromList(List<Group> groups, Long groupId) {
         return groups.stream().filter(group -> group.getId() != 0 && group.getId().equals(groupId)).findFirst().orElse(null);
-        
+
     }
 
     public String getName() {

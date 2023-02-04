@@ -1,30 +1,5 @@
 package ua.com.foxminded.asharov.universityschedule.controller;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Stream;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,19 +13,33 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import ua.com.foxminded.asharov.universityschedule.exception.SomethingWrongHappensException;
-import ua.com.foxminded.asharov.universityschedule.model.Adapter;
-import ua.com.foxminded.asharov.universityschedule.model.Course;
-import ua.com.foxminded.asharov.universityschedule.model.Group;
-import ua.com.foxminded.asharov.universityschedule.model.Lecture;
-import ua.com.foxminded.asharov.universityschedule.model.Room;
-import ua.com.foxminded.asharov.universityschedule.model.Teacher;
-import ua.com.foxminded.asharov.universityschedule.service.CourseService;
-import ua.com.foxminded.asharov.universityschedule.service.GroupService;
-import ua.com.foxminded.asharov.universityschedule.service.LectureService;
-import ua.com.foxminded.asharov.universityschedule.service.RoomService;
-import ua.com.foxminded.asharov.universityschedule.service.StudentService;
-import ua.com.foxminded.asharov.universityschedule.service.TeacherService;
+import ua.com.foxminded.asharov.universityschedule.dto.CourseDto;
+import ua.com.foxminded.asharov.universityschedule.dto.GroupDto;
+import ua.com.foxminded.asharov.universityschedule.dto.LectureDto;
+import ua.com.foxminded.asharov.universityschedule.dto.RoomDto;
+import ua.com.foxminded.asharov.universityschedule.dto.TeacherDto;
+import ua.com.foxminded.asharov.universityschedule.dto.util.Adapter;
+import ua.com.foxminded.asharov.universityschedule.dto.util.MapperUtil;
+import ua.com.foxminded.asharov.universityschedule.entity.Course;
+import ua.com.foxminded.asharov.universityschedule.entity.Group;
+import ua.com.foxminded.asharov.universityschedule.entity.Lecture;
+import ua.com.foxminded.asharov.universityschedule.entity.Room;
+import ua.com.foxminded.asharov.universityschedule.entity.Teacher;
+import ua.com.foxminded.asharov.universityschedule.exception.UniversityException;
+import ua.com.foxminded.asharov.universityschedule.service.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = LecturesController.class)
 class LecturesControllerTest {
@@ -69,7 +58,11 @@ class LecturesControllerTest {
     StudentService studentServ;
     @MockBean
     Adapter adapter;
-    
+    @MockBean
+    LectureDto lectureDto;
+    @MockBean
+    MapperUtil mapperUtil;
+
     @Captor
     ArgumentCaptor<Lecture> lectureCaptor;
     @Captor
@@ -77,121 +70,153 @@ class LecturesControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     LecturesController lecturesController;
 
     DateTimeFormatter pattern;
+    static Group group;
+    static Course course;
+    static Teacher teacher;
+    static Room room;
 
     @BeforeEach
     void setUp() throws Exception {
         pattern = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        group = new Group(1L, "group");
+        course = new Course(1L, "course", "description");
+        teacher = new Teacher(1L, "name", "surname");
+        room = new Room(1L, "address", 10);
     }
 
     @ParameterizedTest
     @MethodSource("provideShowTimetable_shouldComeBack_whenDateNotValid")
     void testShowTimetable_shouldComeBack_whenDateNotValid(Long ownerId, String sDate, String fDate, String ownername,
-            @SuppressWarnings("rawtypes") Optional owner, String infoAboutOner) throws Exception {
+                                                           @SuppressWarnings("rawtypes") Optional owner, String infoAboutOner) throws Exception {
         when(adapter.getOwnerByIdByName(ownerId, ownername)).thenReturn(owner);
 
         mockMvc.perform(get("/lectures/{ownername}/{id}/timetable?startDate={sDate}&finishDate={fDate}", ownername,
                 ownerId, sDate, fDate)).andDo(print()).andExpect(status().is(200))
-                .andExpect(view().name("/lectures/timetable"))
-                .andExpect(content().string(containsString(infoAboutOner)));
+            .andExpect(view().name("/lectures/timetable"))
+            .andExpect(content().string(containsString(infoAboutOner)));
     }
 
     private static Stream<Arguments> provideShowTimetable_shouldComeBack_whenDateNotValid() {
 //TODO Long ownerId, String sDate, String fDate, String ownername, @SuppressWarnings("rawtypes") Optional owner, String infoAboutOner
         return Stream.of(Arguments.of(10001L, "", "", "group", Optional.of(new Group(10001L, "AA-11")), "AA-11"),
-                Arguments.of(10001L, "0001-01-01", "", "group", Optional.of(new Group(10001L, "AA-11")), "AA-11"),
-                Arguments.of(10001L, "", "0001-01-01", "group", Optional.of(new Group(10001L, "AA-11")), "AA-11"),
-                Arguments.of(10001L, "0002-02-02", "0001-01-01", "group", Optional.of(new Group(10001L, "AA-11")),
-                        "AA-11"),
-                Arguments.of(10001L, "", "", "room", Optional.of(new Room(10001L, "address", 100)), "address/100"),
-                Arguments.of(10001L, "0001-01-01", "", "room", Optional.of(new Room(10001L, "address", 100)),
-                        "address/100"),
-                Arguments.of(10001L, "", "0001-01-01", "room", Optional.of(new Room(10001L, "address", 100)),
-                        "address/100"),
-                Arguments.of(10001L, "0002-02-02", "0001-01-01", "room", Optional.of(new Room(10001L, "address", 100)),
-                        "address/100"),
-                Arguments.of(10001L, "", "", "teacher", Optional.of(new Teacher(10001L, "name", "sername")),
-                        "n.sername"),
-                Arguments.of(10001L, "0001-01-01", "", "teacher", Optional.of(new Teacher(10001L, "name", "sername")),
-                        "n.sername"),
-                Arguments.of(10001L, "", "0001-01-01", "teacher", Optional.of(new Teacher(10001L, "name", "sername")),
-                        "n.sername"),
-                Arguments.of(10001L, "0002-02-02", "0001-01-01", "teacher",
-                        Optional.of(new Teacher(10001L, "name", "sername")), "n.sername"));
+            Arguments.of(10001L, "0001-01-01", "", "group", Optional.of(new Group(10001L, "AA-11")), "AA-11"),
+            Arguments.of(10001L, "", "0001-01-01", "group", Optional.of(new Group(10001L, "AA-11")), "AA-11"),
+            Arguments.of(10001L, "0002-02-02", "0001-01-01", "group", Optional.of(new Group(10001L, "AA-11")),
+                "AA-11"),
+            Arguments.of(10001L, "", "", "room", Optional.of(new Room(10001L, "address", 100)), "address/100"),
+            Arguments.of(10001L, "0001-01-01", "", "room", Optional.of(new Room(10001L, "address", 100)),
+                "address/100"),
+            Arguments.of(10001L, "", "0001-01-01", "room", Optional.of(new Room(10001L, "address", 100)),
+                "address/100"),
+            Arguments.of(10001L, "0002-02-02", "0001-01-01", "room", Optional.of(new Room(10001L, "address", 100)),
+                "address/100"),
+            Arguments.of(10001L, "", "", "teacher", Optional.of(new Teacher(10001L, "name", "sername")),
+                "n.sername"),
+            Arguments.of(10001L, "0001-01-01", "", "teacher", Optional.of(new Teacher(10001L, "name", "sername")),
+                "n.sername"),
+            Arguments.of(10001L, "", "0001-01-01", "teacher", Optional.of(new Teacher(10001L, "name", "sername")),
+                "n.sername"),
+            Arguments.of(10001L, "0002-02-02", "0001-01-01", "teacher",
+                Optional.of(new Teacher(10001L, "name", "sername")), "n.sername"));
     }
-    
+
     @ParameterizedTest
     @MethodSource("provideshouldErrorPage_whenSomethingWrongHappens")
     void testShowTimetable_shouldErrorPage_whenSomethingWrongHappens(Long ownerId, String sDate, String fDate, String ownername,
-            @SuppressWarnings("rawtypes") Optional owner, String infoAboutOner) throws Exception {
+                                                                     @SuppressWarnings("rawtypes") Optional owner, String infoAboutOner) throws Exception {
         when(adapter.getOwnerByIdByName(ownerId, ownername)).thenReturn(owner);
-        
+
         mockMvc.perform(get("/lectures/{ownername}/{id}/timetable?startDate={sDate}&finishDate={fDate}", ownername,
-        ownerId, sDate, fDate)).andDo(print()).andExpect(status().is(400))
-        .andExpect(result -> assertTrue(result.getResolvedException() instanceof SomethingWrongHappensException))
-        .andExpect(result -> assertEquals("Something wrong happens ownername - " + ownername, result.getResolvedException().getMessage()));
+                ownerId, sDate, fDate)).andDo(print()).andExpect(status().is(400))
+            .andExpect(result -> assertTrue(result.getResolvedException() instanceof UniversityException))
+            .andExpect(result -> assertEquals("something happend with treatment " + ownername + ", try again please", result.getResolvedException().getMessage()));
     }
-    
+
     private static Stream<Arguments> provideshouldErrorPage_whenSomethingWrongHappens() {
 //TODO Long ownerId, String sDate, String fDate, String ownername, @SuppressWarnings("rawtypes") Optional owner, String infoAboutOner
         return Stream.of(
-                Arguments.of(10001L, "", "", "group", Optional.empty(), "AA-11"),
-                Arguments.of(10001L, "", "", "room", Optional.empty(), "address/100"),
-                Arguments.of(10001L, "", "", "teacher", Optional.empty(), "n.sername"));
+            Arguments.of(10001L, "", "", "group", Optional.empty(), "AA-11"),
+            Arguments.of(10001L, "", "", "room", Optional.empty(), "address/100"),
+            Arguments.of(10001L, "", "", "teacher", Optional.empty(), "n.sername"));
     }
 
     @SuppressWarnings("rawtypes")
     @ParameterizedTest
     @MethodSource("provideShowTimetable_shouldRun_whenFinishDateAndThanStartDateIsOk")
     void testShowTimetable_shouldRun_whenFinishDateAndThanStartDateIsOk(Long ownerId, String ownername, Optional owner,
-            String showcase, String page, String timeview, String mode, List<String> result) throws Exception {
+                                                                        String showcase, String page, String timeview, String mode, List<String> result) throws Exception {
         String startDate = "29-12-2022";
         String firstDate = "30-12-2022";
         String secondDate = "01-01-2023";
         String finishDate = "02-01-2023";
 
-        SortedMap<LocalDate, ArrayList<Lecture>> timetablePerDay = new TreeMap<LocalDate, ArrayList<Lecture>>();
+        SortedMap<LocalDate, ArrayList<LectureDto>> timetablePerDay = new TreeMap<LocalDate, ArrayList<LectureDto>>();
         timetablePerDay.put(LocalDate.parse(startDate, pattern), makeBlankDay(startDate));
         timetablePerDay.put(LocalDate.parse(firstDate, pattern),
-                new ArrayList<>(Arrays.asList(new Lecture(1, LocalDate.parse(firstDate, pattern), 4L, 2L, 3L, 2L),
-                        new Lecture(2, LocalDate.parse(firstDate, pattern), null, null, null, null),
-                        new Lecture(3, LocalDate.parse(firstDate, pattern), 4L, 2L, 3L, 2L),
-                        new Lecture(4, LocalDate.parse(firstDate, pattern), null, null, null, null),
-                        new Lecture(5, LocalDate.parse(firstDate, pattern), null, null, null, null),
-                        new Lecture(6, LocalDate.parse(firstDate, pattern), null, null, null, null))));
+            new ArrayList<>(Arrays.asList(new LectureDto(1, LocalDate.parse(firstDate, pattern), 4L, 2L, 3L, 2L),
+                new LectureDto(2, LocalDate.parse(firstDate, pattern), null, null, null, null),
+                new LectureDto(3, LocalDate.parse(firstDate, pattern), 4L, 2L, 3L, 2L),
+                new LectureDto(4, LocalDate.parse(firstDate, pattern), null, null, null, null),
+                new LectureDto(5, LocalDate.parse(firstDate, pattern), null, null, null, null),
+                new LectureDto(6, LocalDate.parse(firstDate, pattern), null, null, null, null))));
         timetablePerDay.put(LocalDate.parse("31-12-2022", pattern), makeBlankDay("31-12-2022"));
         timetablePerDay.put(LocalDate.parse(secondDate, pattern),
-                new ArrayList<>(
-                        Arrays.asList(new Lecture(1, LocalDate.parse(secondDate, pattern), null, null, null, null),
-                                new Lecture(2, LocalDate.parse(secondDate, pattern), null, null, null, null),
-                                new Lecture(3, LocalDate.parse(secondDate, pattern), null, null, null, null),
-                                new Lecture(4, LocalDate.parse(secondDate, pattern), null, null, null, null),
-                                new Lecture(5, LocalDate.parse(secondDate, pattern), 4L, 2L, 3L, 2L),
-                                new Lecture(6, LocalDate.parse(secondDate, pattern), null, null, null, null))));
+            new ArrayList<>(
+                Arrays.asList(new LectureDto(1, LocalDate.parse(secondDate, pattern), null, null, null, null),
+                    new LectureDto(2, LocalDate.parse(secondDate, pattern), null, null, null, null),
+                    new LectureDto(3, LocalDate.parse(secondDate, pattern), null, null, null, null),
+                    new LectureDto(4, LocalDate.parse(secondDate, pattern), null, null, null, null),
+                    new LectureDto(5, LocalDate.parse(secondDate, pattern), 4L, 2L, 3L, 2L),
+                    new LectureDto(6, LocalDate.parse(secondDate, pattern), null, null, null, null))));
         timetablePerDay.put(LocalDate.parse(finishDate, pattern), makeBlankDay(finishDate));
-
+       
         when(adapter.getOwnerByIdByName(ownerId, ownername)).thenReturn(owner);
 
-        when(groupServ.retrieveGroupByStudentId(ownerId)).thenReturn(new Group(2L, "groupName2"));
-        when(teacherServ.retrieveAll()).thenReturn(Arrays.asList(new Teacher(1L, "Name1", "Surname1"),
-                new Teacher(2L, "Name2", "Surname2"), new Teacher(3L, "Name3", "Surname3")));
-        when(groupServ.retrieveAll()).thenReturn(
-                Arrays.asList(new Group(1L, "groupName1"), new Group(2L, "groupName2"), new Group(3L, "groupName3")));
-        when(courseServ.retrieveAll()).thenReturn(Arrays.asList(new Course(1L, "Course1", "Description1"),
-                new Course(2L, "Course2", "Description2"), new Course(3L, "Course3", "Description3"),
-                new Course(4L, "Course4", "Description4"), new Course(5L, "Course5", "Description5")));
-        when(roomServ.retrieveAll())
-                .thenReturn(Arrays.asList(new Room(1L, "address1", 10), new Room(2L, "address2", 20),
-                        new Room(3L, "address3", 30), new Room(4L, "address4", 40), new Room(5L, "address5", 50)));
-
+        when(groupServ.retrieveGroupByStudentId(ownerId)).thenReturn(
+                new Group(2L, "groupName2"));
+        when(teacherServ.retrieveAll()).thenReturn(Arrays.asList(
+                new Teacher(1L, "Name1", "Surname1"),
+                new Teacher(2L, "Name2", "Surname2"), 
+                new Teacher(3L, "Name3", "Surname3")));
+        when(groupServ.retrieveAll()).thenReturn(Arrays.asList(
+                new Group(1L, "groupName1"), 
+                new Group(2L, "groupName2"), 
+                new Group(3L, "groupName3")));
+        when(courseServ.retrieveAll()).thenReturn(Arrays.asList(
+                new Course(1L, "Course1", "Description1"),
+                new Course(2L, "Course2", "Description2"), 
+                new Course(3L, "Course3", "Description3"),
+                new Course(4L, "Course4", "Description4"), 
+                new Course(5L, "Course5", "Description5")));
+        when(roomServ.retrieveAll()).thenReturn(Arrays.asList(
+                new Room(1L, "address1", 10), new Room(2L, "address2", 20),
+                new Room(3L, "address3", 30), new Room(4L, "address4", 40), 
+                new Room(5L, "address5", 50)));
+        when(mapperUtil.toDto(new Teacher(1L, "Name1", "Surname1"))).thenReturn(new TeacherDto(1L, "Name1", "Surname1"));
+        when(mapperUtil.toDto(new Teacher(2L, "Name2", "Surname2"))).thenReturn(new TeacherDto(2L, "Name2", "Surname2"));
+        when(mapperUtil.toDto(new Teacher(3L, "Name3", "Surname3"))).thenReturn(new TeacherDto(3L, "Name3", "Surname3"));
+        when(mapperUtil.toDto(new Group(1L, "groupName1"))).thenReturn(new GroupDto(1L, "groupName1"));
+        when(mapperUtil.toDto(new Group(2L, "groupName2"))).thenReturn(new GroupDto(2L, "groupName2"));
+        when(mapperUtil.toDto(new Group(3L, "groupName3"))).thenReturn(new GroupDto(3L, "groupName3"));
+        when(mapperUtil.toDto(new Course(1L, "Course1", "Description1"))).thenReturn(new CourseDto(1L, "Course1", "Description1"));
+        when(mapperUtil.toDto(new Course(2L, "Course2", "Description2"))).thenReturn(new CourseDto(2L, "Course2", "Description2"));
+        when(mapperUtil.toDto(new Course(3L, "Course3", "Description3"))).thenReturn(new CourseDto(3L, "Course3", "Description3"));
+        when(mapperUtil.toDto(new Course(4L, "Course4", "Description4"))).thenReturn(new CourseDto(4L, "Course4", "Description4"));
+        when(mapperUtil.toDto(new Course(5L, "Course5", "Description5"))).thenReturn(new CourseDto(5L, "Course5", "Description5"));
+        when(mapperUtil.toDto(new Room(1L, "address1", 10))).thenReturn(new RoomDto(1L, "address1", 10));
+        when(mapperUtil.toDto(new Room(2L, "address2", 20))).thenReturn(new RoomDto(2L, "address2", 20));
+        when(mapperUtil.toDto(new Room(3L, "address3", 30))).thenReturn(new RoomDto(3L, "address3", 30));
+        when(mapperUtil.toDto(new Room(4L, "address4", 40))).thenReturn(new RoomDto(4L, "address4", 40));
+        when(mapperUtil.toDto(new Room(5L, "address5", 50))).thenReturn(new RoomDto(5L, "address5", 50));
+        
 // new Lecture(null, finishDate, room, teacher, course, group)
-        SortedMap<LocalDate, ArrayList<Lecture>> monthOne = new TreeMap<>();
-        SortedMap<LocalDate, ArrayList<Lecture>> monthTwo = new TreeMap<>();
-        List<SortedMap<LocalDate, ArrayList<Lecture>>> timetablePerMonth = Arrays.asList(monthOne, monthTwo);
+        SortedMap<LocalDate, ArrayList<LectureDto>> monthOne = new TreeMap<>();
+        SortedMap<LocalDate, ArrayList<LectureDto>> monthTwo = new TreeMap<>();
+        List<SortedMap<LocalDate, ArrayList<LectureDto>>> timetablePerMonth = Arrays.asList(monthOne, monthTwo);
         monthOne.put(LocalDate.parse("01-12-2022", pattern), makeBlankDay("01-12-2022"));
         monthOne.put(LocalDate.parse("02-12-2022", pattern), makeBlankDay("02-12-2022"));
         monthOne.put(LocalDate.parse("03-12-2022", pattern), makeBlankDay("03-12-2022"));
@@ -223,7 +248,7 @@ class LecturesControllerTest {
         monthOne.put(LocalDate.parse(startDate, pattern), timetablePerDay.get(LocalDate.parse(startDate, pattern)));
         monthOne.put(LocalDate.parse(firstDate, pattern), timetablePerDay.get(LocalDate.parse(firstDate, pattern)));
         monthOne.put(LocalDate.parse("31-12-2022", pattern),
-                timetablePerDay.get(LocalDate.parse("31-12-2022", pattern)));
+            timetablePerDay.get(LocalDate.parse("31-12-2022", pattern)));
         monthTwo.put(LocalDate.parse(secondDate, pattern), timetablePerDay.get(LocalDate.parse(secondDate, pattern)));
         monthTwo.put(LocalDate.parse(finishDate, pattern), timetablePerDay.get(LocalDate.parse(finishDate, pattern)));
         monthTwo.put(LocalDate.parse("03-01-2023", pattern), makeBlankDay("03-01-2023"));
@@ -257,29 +282,29 @@ class LecturesControllerTest {
         monthTwo.put(LocalDate.parse("31-01-2023", pattern), makeBlankDay("31-01-2023"));
 
         when(adapter.stuffTimetableByOwnername(LocalDate.parse(startDate, pattern),
-                LocalDate.parse(finishDate, pattern), ownerId, ownername)).thenReturn(timetablePerDay);
+            LocalDate.parse(finishDate, pattern), ownerId, ownername)).thenReturn(timetablePerDay);
         when(adapter.wrapForMonthView(timetablePerDay)).thenReturn(timetablePerMonth);
 
         mockMvc.perform(get("/lectures/{ownername}/{id}/{timeview}?startDate={startDate}&finishDate={finishDate}",
                 ownername, ownerId, timeview, LocalDate.parse(startDate, pattern), LocalDate.parse(finishDate, pattern))
                 .queryParam("showcase", showcase).queryParam("page", page).queryParam("mode", mode)).andDo(print())
-                .andExpect(status().is(200)).andExpect(view().name("/lectures/timetable"))
-                .andExpect(content().string(containsString(result.get(0))))
-                .andExpect(content().string(containsString("2022-12-29")))
-                .andExpect(content().string(containsString("2023-01-02")))
-                .andExpect(content().string(containsString(result.get(1))))
-                .andExpect(content().string(containsString(result.get(2))))
-                .andExpect(content().string(containsString(result.get(3))))
-                .andExpect(content().string(containsString(result.get(4))))
-                .andExpect(content().string(containsString(result.get(5))))
-                .andExpect(content().string(containsString(result.get(6))))
-                .andExpect(content().string(containsString(result.get(7))))
-                .andExpect(content().string(containsString(result.get(8))))
-                .andExpect(content().string(containsString(result.get(9))))
-                .andExpect(content().string(containsString(result.get(10))))
-                .andExpect(content().string(containsString(result.get(11))))
-                .andExpect(content().string(containsString(result.get(12))))
-                .andExpect(content().string(containsString(result.get(13))));
+            .andExpect(status().is(200)).andExpect(view().name("/lectures/timetable"))
+            .andExpect(content().string(containsString(result.get(0))))
+            .andExpect(content().string(containsString("2022-12-29")))
+            .andExpect(content().string(containsString("2023-01-02")))
+            .andExpect(content().string(containsString(result.get(1))))
+            .andExpect(content().string(containsString(result.get(2))))
+            .andExpect(content().string(containsString(result.get(3))))
+            .andExpect(content().string(containsString(result.get(4))))
+            .andExpect(content().string(containsString(result.get(5))))
+            .andExpect(content().string(containsString(result.get(6))))
+            .andExpect(content().string(containsString(result.get(7))))
+            .andExpect(content().string(containsString(result.get(8))))
+            .andExpect(content().string(containsString(result.get(9))))
+            .andExpect(content().string(containsString(result.get(10))))
+            .andExpect(content().string(containsString(result.get(11))))
+            .andExpect(content().string(containsString(result.get(12))))
+            .andExpect(content().string(containsString(result.get(13))));
     }
 
     private static Stream<Arguments> provideShowTimetable_shouldRun_whenFinishDateAndThanStartDateIsOk() {
@@ -287,354 +312,354 @@ class LecturesControllerTest {
         String invertFirstDate = "2022-12-30";
         String invertSecondDate = "2023-01-01";
         String invertFinishDate = "2023-01-02";
-//(Long id, String ownername,  Optional owner, String showcase, Integer page, String timeview, String mode, List<String> result)
+//(Long ownerId, String ownername, Optional owner, String showcase, String page, String timeview, String mode, List<String> result)
         return Stream.of(
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
-                                "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "course", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
-                                "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "room", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "group", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "teacher", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
-                                "5", "6", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
+                    "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "course", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
+                    "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "room", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "group", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "teacher", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
+                    "5", "6", "", "", "", "")),
 
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "course", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "room", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
-                                "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "group", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "6", "",
-                                "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "teacher", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
-                                "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "course", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "room", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
+                    "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "group", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "6", "",
+                    "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "teacher", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
+                    "", "", "", "")),
 
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "", "day", "viewer",
-                        Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "viewer",
-                        Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "viewer",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "N.Surname2", "address4/40", "2",
-                                "3", "Course3", "N.Surname2", "address4/40", "4", "5", "6")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "viewer",
-                        Arrays.asList("groupName2", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "viewer",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "N.Surname2",
-                                "address4/40", "6", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "viewer",
-                        Arrays.asList("groupName2", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "", "day", "viewer",
+                Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "viewer",
+                Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "viewer",
+                Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "N.Surname2", "address4/40", "2",
+                    "3", "Course3", "N.Surname2", "address4/40", "4", "5", "6")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "viewer",
+                Arrays.asList("groupName2", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "viewer",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "N.Surname2",
+                    "address4/40", "6", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "viewer",
+                Arrays.asList("groupName2", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
 
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "", "day", "creater",
-                        Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "creater",
-                        Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "creater",
-                        Arrays.asList("groupName2", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
-                                "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
-                                "Course3", "N.Surname2", "address4/40", "delete",
-                                "12/30/22 at 4 put your lecture here")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "creater",
-                        Arrays.asList("groupName2", "2022-12-31", "12/31/22 at 1 put your lecture here",
-                                "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
-                                "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
-                                "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "creater",
-                        Arrays.asList("groupName2", invertSecondDate, "1/1/23 at 1 put your lecture here",
-                                "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
-                                "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
-                                "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
-                Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "creater",
-                        Arrays.asList("groupName2", invertFinishDate, "1/2/23 at 1 put your lecture here",
-                                "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
-                                "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
-                                "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "", "day", "creater",
+                Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "creater",
+                Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "creater",
+                Arrays.asList("groupName2", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
+                    "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
+                    "Course3", "N.Surname2", "address4/40", "delete",
+                    "12/30/22 at 4 put your lecture here")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "creater",
+                Arrays.asList("groupName2", "2022-12-31", "12/31/22 at 1 put your lecture here",
+                    "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
+                    "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
+                    "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "creater",
+                Arrays.asList("groupName2", invertSecondDate, "1/1/23 at 1 put your lecture here",
+                    "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
+                    "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
+                    "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
+            Arguments.of(2L, "group", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "creater",
+                Arrays.asList("groupName2", invertFinishDate, "1/2/23 at 1 put your lecture here",
+                    "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
+                    "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
+                    "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")),
 
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
-                                "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "course", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
-                                "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "room", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "group", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "teacher", "", "month", "",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
-                                "5", "6", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
+                    "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "course", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
+                    "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "room", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "group", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "teacher", "", "month", "",
+                Arrays.asList("groupName2", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
+                    "5", "6", "", "", "", "")),
 
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "course", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "room", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
-                                "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "group", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "6", "",
-                                "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "teacher", "2", "month", "",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
-                                "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "course", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "room", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
+                    "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "group", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "6", "",
+                    "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "teacher", "2", "month", "",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
+                    "", "", "", "")),
 
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "", "day", "viewer",
-                        Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "viewer",
-                        Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "viewer",
-                        Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "N.Surname2", "address4/40", "2",
-                                "3", "Course3", "N.Surname2", "address4/40", "4", "5", "6")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "viewer",
-                        Arrays.asList("groupName2", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "viewer",
-                        Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "N.Surname2",
-                                "address4/40", "6", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "viewer",
-                        Arrays.asList("groupName2", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "", "day", "viewer",
+                Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "viewer",
+                Arrays.asList("groupName2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "viewer",
+                Arrays.asList("groupName2", invertFirstDate, "1", "Course3", "N.Surname2", "address4/40", "2",
+                    "3", "Course3", "N.Surname2", "address4/40", "4", "5", "6")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "viewer",
+                Arrays.asList("groupName2", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "viewer",
+                Arrays.asList("groupName2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "N.Surname2",
+                    "address4/40", "6", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "viewer",
+                Arrays.asList("groupName2", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
 
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "", "day", "creater",
-                        Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "creater",
-                        Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "creater",
-                        Arrays.asList("groupName2", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
-                                "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
-                                "Course3", "N.Surname2", "address4/40", "delete",
-                                "12/30/22 at 4 put your lecture here")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "creater",
-                        Arrays.asList("groupName2", "2022-12-31", "12/31/22 at 1 put your lecture here",
-                                "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
-                                "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
-                                "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "creater",
-                        Arrays.asList("groupName2", invertSecondDate, "1/1/23 at 1 put your lecture here",
-                                "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
-                                "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
-                                "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
-                Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "creater",
-                        Arrays.asList("groupName2", invertFinishDate, "1/2/23 at 1 put your lecture here",
-                                "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
-                                "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
-                                "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "", "day", "creater",
+                Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "1", "day", "creater",
+                Arrays.asList("groupName2", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "2", "day", "creater",
+                Arrays.asList("groupName2", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
+                    "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
+                    "Course3", "N.Surname2", "address4/40", "delete",
+                    "12/30/22 at 4 put your lecture here")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "3", "day", "creater",
+                Arrays.asList("groupName2", "2022-12-31", "12/31/22 at 1 put your lecture here",
+                    "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
+                    "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
+                    "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "4", "day", "creater",
+                Arrays.asList("groupName2", invertSecondDate, "1/1/23 at 1 put your lecture here",
+                    "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
+                    "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
+                    "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
+            Arguments.of(999L, "student", Optional.of(new Group(2L, "groupName2")), "", "5", "day", "creater",
+                Arrays.asList("groupName2", invertFinishDate, "1/2/23 at 1 put your lecture here",
+                    "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
+                    "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
+                    "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")),
 
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "", "month", "",
-                        Arrays.asList("N.Surname2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
-                                "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "course", "", "month",
-                        "",
-                        Arrays.asList("N.Surname2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
-                                "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "room", "", "month", "",
-                        Arrays.asList("N.Surname2", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "group", "", "month", "",
-                        Arrays.asList("N.Surname2", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "teacher", "", "month",
-                        "",
-                        Arrays.asList("N.Surname2", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
-                                "5", "6", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "", "month", "",
+                Arrays.asList("N.Surname2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
+                    "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "course", "", "month",
+                "",
+                Arrays.asList("N.Surname2", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5", "6",
+                    "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "room", "", "month", "",
+                Arrays.asList("N.Surname2", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "group", "", "month", "",
+                Arrays.asList("N.Surname2", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "teacher", "", "month",
+                "",
+                Arrays.asList("N.Surname2", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
+                    "5", "6", "", "", "", "")),
 
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "2", "month", "",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "course", "2", "month",
-                        "",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "room", "2", "month", "",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
-                                "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "group", "2", "month",
-                        "",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "", "5", "groupName2", "6",
-                                "", "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "teacher", "2", "month",
-                        "",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
-                                "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "2", "month", "",
+                Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "course", "2", "month",
+                "",
+                Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "room", "2", "month", "",
+                Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
+                    "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "group", "2", "month",
+                "",
+                Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "", "5", "groupName2", "6",
+                    "", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "teacher", "2", "month",
+                "",
+                Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
+                    "", "", "", "")),
 
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "", "day", "viewer",
-                        Arrays.asList("N.Surname2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "1", "day", "viewer",
-                        Arrays.asList("N.Surname2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "2", "day", "viewer",
-                        Arrays.asList("N.Surname2", invertFirstDate, "1", "Course3", "groupName2", "address4/40", "2",
-                                "3", "Course3", "N.Surname2", "address4/40", "4", "5", "6")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "3", "day", "viewer",
-                        Arrays.asList("N.Surname2", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "4", "day", "viewer",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "groupName2",
-                                "address4/40", "6", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "5", "day", "viewer",
-                        Arrays.asList("N.Surname2", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "", "day", "viewer",
+                Arrays.asList("N.Surname2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "1", "day", "viewer",
+                Arrays.asList("N.Surname2", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "2", "day", "viewer",
+                Arrays.asList("N.Surname2", invertFirstDate, "1", "Course3", "groupName2", "address4/40", "2",
+                    "3", "Course3", "N.Surname2", "address4/40", "4", "5", "6")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "3", "day", "viewer",
+                Arrays.asList("N.Surname2", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "4", "day", "viewer",
+                Arrays.asList("N.Surname2", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "groupName2",
+                    "address4/40", "6", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "5", "day", "viewer",
+                Arrays.asList("N.Surname2", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
 
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "", "day", "creater",
-                        Arrays.asList("N.Surname2", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "1", "day",
-                        "creater",
-                        Arrays.asList("N.Surname2", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "2", "day",
-                        "creater",
-                        Arrays.asList("N.Surname2", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
-                                "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
-                                "Course3", "N.Surname2", "address4/40", "delete",
-                                "12/30/22 at 4 put your lecture here")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "3", "day",
-                        "creater",
-                        Arrays.asList("N.Surname2", "2022-12-31", "12/31/22 at 1 put your lecture here",
-                                "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
-                                "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
-                                "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "4", "day",
-                        "creater",
-                        Arrays.asList("N.Surname2", invertSecondDate, "1/1/23 at 1 put your lecture here",
-                                "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
-                                "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
-                                "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
-                Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "5", "day",
-                        "creater",
-                        Arrays.asList("N.Surname2", invertFinishDate, "1/2/23 at 1 put your lecture here",
-                                "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
-                                "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
-                                "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "", "day", "creater",
+                Arrays.asList("N.Surname2", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "1", "day",
+                "creater",
+                Arrays.asList("N.Surname2", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "2", "day",
+                "creater",
+                Arrays.asList("N.Surname2", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
+                    "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
+                    "Course3", "N.Surname2", "address4/40", "delete",
+                    "12/30/22 at 4 put your lecture here")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "3", "day",
+                "creater",
+                Arrays.asList("N.Surname2", "2022-12-31", "12/31/22 at 1 put your lecture here",
+                    "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
+                    "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
+                    "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "4", "day",
+                "creater",
+                Arrays.asList("N.Surname2", invertSecondDate, "1/1/23 at 1 put your lecture here",
+                    "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
+                    "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
+                    "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
+            Arguments.of(2L, "teacher", Optional.of(new Teacher(2L, "Name2", "Surname2")), "", "5", "day",
+                "creater",
+                Arrays.asList("N.Surname2", invertFinishDate, "1/2/23 at 1 put your lecture here",
+                    "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
+                    "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
+                    "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")),
 
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "", "month", "",
-                        Arrays.asList("address4/40", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5",
-                                "6", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "course", "", "month", "",
-                        Arrays.asList("address4/40", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5",
-                                "6", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "room", "", "month", "",
-                        Arrays.asList("address4/40", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "group", "", "month", "",
-                        Arrays.asList("address4/40", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
-                                "5", "6", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "teacher", "", "month", "",
-                        Arrays.asList("address4/40", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
-                                "5", "6", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "", "month", "",
+                Arrays.asList("address4/40", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5",
+                    "6", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "course", "", "month", "",
+                Arrays.asList("address4/40", invertFirstDate, "1", "Course3", "2", "3", "Course3", "4", "5",
+                    "6", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "room", "", "month", "",
+                Arrays.asList("address4/40", invertFirstDate, "1", "address4/40", "2", "3", "address4/40", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "group", "", "month", "",
+                Arrays.asList("address4/40", invertFirstDate, "1", "groupName2", "2", "3", "groupName2", "4",
+                    "5", "6", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "teacher", "", "month", "",
+                Arrays.asList("address4/40", invertFirstDate, "1", "N.Surname2", "2", "3", "N.Surname2", "4",
+                    "5", "6", "", "", "", "")),
 
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "2", "month", "",
-                        Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "course", "2", "month", "",
-                        Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
-                                "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "room", "2", "month", "",
-                        Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
-                                "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "group", "2", "month", "",
-                        Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "6", "",
-                                "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "teacher", "2", "month", "",
-                        Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
-                                "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "2", "month", "",
+                Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "course", "2", "month", "",
+                Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "Course3", "6", "", "",
+                    "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "room", "2", "month", "",
+                Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "address4/40", "6", "",
+                    "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "group", "2", "month", "",
+                Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "6", "",
+                    "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "teacher", "2", "month", "",
+                Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "N.Surname2", "6", "",
+                    "", "", "", "")),
 
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "", "day", "viewer",
-                        Arrays.asList("address4/40", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "1", "day", "viewer",
-                        Arrays.asList("address4/40", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "2", "day", "viewer",
-                        Arrays.asList("address4/40", invertFirstDate, "1", "groupName2", "Course3", "N.Surname2", "2",
-                                "3", "groupName2", "Course3", "N.Surname2", "4", "5", "6")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "3", "day", "viewer",
-                        Arrays.asList("address4/40", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "4", "day", "viewer",
-                        Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "Course3",
-                                "N.Surname2", "6", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "5", "day", "viewer",
-                        Arrays.asList("address4/40", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
-                                "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "", "day", "viewer",
+                Arrays.asList("address4/40", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "1", "day", "viewer",
+                Arrays.asList("address4/40", invertStartDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "2", "day", "viewer",
+                Arrays.asList("address4/40", invertFirstDate, "1", "groupName2", "Course3", "N.Surname2", "2",
+                    "3", "groupName2", "Course3", "N.Surname2", "4", "5", "6")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "3", "day", "viewer",
+                Arrays.asList("address4/40", "2022-12-31", "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "4", "day", "viewer",
+                Arrays.asList("address4/40", invertSecondDate, "1", "2", "3", "4", "5", "groupName2", "Course3",
+                    "N.Surname2", "6", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "5", "day", "viewer",
+                Arrays.asList("address4/40", invertFinishDate, "1", "2", "3", "4", "5", "6", "", "", "", "", "",
+                    "")),
 
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "", "day", "creater",
-                        Arrays.asList("address4/40", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "1", "day", "creater",
-                        Arrays.asList("address4/40", invertStartDate, "12/29/22 at 1 put your lecture here",
-                                "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
-                                "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
-                                "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "2", "day", "creater",
-                        Arrays.asList("address4/40", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
-                                "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
-                                "Course3", "N.Surname2", "address4/40", "delete",
-                                "12/30/22 at 4 put your lecture here")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "3", "day", "creater",
-                        Arrays.asList("address4/40", "2022-12-31", "12/31/22 at 1 put your lecture here",
-                                "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
-                                "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
-                                "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "4", "day", "creater",
-                        Arrays.asList("address4/40", invertSecondDate, "1/1/23 at 1 put your lecture here",
-                                "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
-                                "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
-                                "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
-                Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "5", "day", "creater",
-                        Arrays.asList("address4/40", invertFinishDate, "1/2/23 at 1 put your lecture here",
-                                "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
-                                "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
-                                "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")));
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "", "day", "creater",
+                Arrays.asList("address4/40", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "1", "day", "creater",
+                Arrays.asList("address4/40", invertStartDate, "12/29/22 at 1 put your lecture here",
+                    "12/29/22 at 2 put your lecture here", "12/29/22 at 3 put your lecture here",
+                    "12/29/22 at 4 put your lecture here", "12/29/22 at 5 put your lecture here",
+                    "12/29/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "2", "day", "creater",
+                Arrays.asList("address4/40", invertFirstDate, "12/30/22 at 1", "Course3", "N.Surname2",
+                    "address4/40", "delete", "12/30/22 at 2 put your lecture here", "12/30/22 at 3",
+                    "Course3", "N.Surname2", "address4/40", "delete",
+                    "12/30/22 at 4 put your lecture here")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "3", "day", "creater",
+                Arrays.asList("address4/40", "2022-12-31", "12/31/22 at 1 put your lecture here",
+                    "12/31/22 at 2 put your lecture here", "12/31/22 at 3 put your lecture here",
+                    "12/31/22 at 4 put your lecture here", "12/31/22 at 5 put your lecture here",
+                    "12/31/22 at 6 put your lecture here", "", "", "", "", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "4", "day", "creater",
+                Arrays.asList("address4/40", invertSecondDate, "1/1/23 at 1 put your lecture here",
+                    "1/1/23 at 2 put your lecture here", "1/1/23 at 3 put your lecture here",
+                    "1/1/23 at 4 put your lecture here", "1/1/23 at 5", "Course3", "N.Surname2",
+                    "address4/40", "delete", "1/1/23 at 6 put your lecture here", "", "")),
+            Arguments.of(4L, "room", Optional.of(new Room(4L, "address4", 40)), "", "5", "day", "creater",
+                Arrays.asList("address4/40", invertFinishDate, "1/2/23 at 1 put your lecture here",
+                    "1/2/23 at 2 put your lecture here", "1/2/23 at 3 put your lecture here",
+                    "1/2/23 at 4 put your lecture here", "1/2/23 at 5 put your lecture here",
+                    "1/2/23 at 6 put your lecture here", "", "", "", "", "", "")));
     }
 
-    private ArrayList<Lecture> makeBlankDay(String string) {
-        return new ArrayList<>(Arrays.asList(new Lecture(1, LocalDate.parse(string, pattern), null, null, null, null),
-                new Lecture(2, LocalDate.parse(string, pattern), null, null, null, null),
-                new Lecture(3, LocalDate.parse(string, pattern), null, null, null, null),
-                new Lecture(4, LocalDate.parse(string, pattern), null, null, null, null),
-                new Lecture(5, LocalDate.parse(string, pattern), null, null, null, null),
-                new Lecture(6, LocalDate.parse(string, pattern), null, null, null, null)));
+    private ArrayList<LectureDto> makeBlankDay(String string) {
+        return new ArrayList<>(Arrays.asList(new LectureDto(1, LocalDate.parse(string, pattern), null, null, null, null),
+            new LectureDto(2, LocalDate.parse(string, pattern), null, null, null, null),
+            new LectureDto(3, LocalDate.parse(string, pattern), null, null, null, null),
+            new LectureDto(4, LocalDate.parse(string, pattern), null, null, null, null),
+            new LectureDto(5, LocalDate.parse(string, pattern), null, null, null, null),
+            new LectureDto(6, LocalDate.parse(string, pattern), null, null, null, null)));
     }
 
     @ParameterizedTest
@@ -650,18 +675,18 @@ class LecturesControllerTest {
         Long roomId = 1L;
 
         when(roomServ.retrieveFreeByTime(currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Room(1L, "address", 0)));
+            .thenReturn(Arrays.asList(new Room(1L, "address", 0)));
         when(courseServ.retrieveFreeByTeacherWithFreeGroupsByTime(teacherId, currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Course(4L, "Course4", "Description4")));
+            .thenReturn(Arrays.asList(new Course(4L, "Course4", "Description4")));
         when(groupServ.retrieveFreeByTeacherByCourseByTime(teacherId, courseId, currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Group(4L, "Group4")));
+            .thenReturn(Arrays.asList(new Group(4L, "Group4")));
 
         when(groupServ.retrieveFreeByTime(currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Group(3L, "Group3")));
+            .thenReturn(Arrays.asList(new Group(3L, "Group3")));
         when(courseServ.retrieveFreeByGroupWithFreeTeachersByTime(groupId, currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Course(3L, "Course3", "Description3")));
+            .thenReturn(Arrays.asList(new Course(3L, "Course3", "Description3")));
         when(teacherServ.retrieveFreeByGroupByCourseByTime(groupId, courseId, currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Teacher(3L, "Name3", "Surname3")));
+            .thenReturn(Arrays.asList(new Teacher(3L, "Name3", "Surname3")));
 
         mockMvc.perform(get("/lectures/new")
                 .queryParam("lectureId", lectureId.toString())
@@ -676,91 +701,94 @@ class LecturesControllerTest {
                 .queryParam("date", "2022-01-02")
                 .queryParam("finishDate", "2022-01-03")
                 .queryParam("substitute", substitute)).andDo(print())
-                .andExpect(status().is(200)).andExpect(view().name("lectures/" + exit))
-                .andExpect(content().string(containsString(result)));
+            .andExpect(status().is(200)).andExpect(view().name("lectures/" + exit))
+            .andExpect(content().string(containsString(result)));
     }
 
     private static Stream<Arguments> provideStringLectureParts() {
         /*
          * String ownername, String substitute, String exit, String result)
-         * List<String> sequenceSteps = 
+         * List<String> sequenceSteps =
          * "group".equals(ownername) ? Arrays.asList("dateAndTime", "room", "course", "teacher") :
-         * "teacher".equals(ownername) ? Arrays.asList("dateAndTime", "room", "course", "group" ) : 
+         * "teacher".equals(ownername) ? Arrays.asList("dateAndTime", "room", "course", "group" ) :
          * "room".equals(ownername) ? Arrays.asList("dateAndTime", "group", "course", "teacher")
+         * 5 and 8
          */
         return Stream.of(Arguments.of("group", "dateAndTime", "stringLectureParts", "address/0"),
-                Arguments.of("group", "room", "stringLectureParts", "Course3"),
-                Arguments.of("group", "course", "modifyLectureParts", "N.Surname3"),
+            Arguments.of("group", "room", "stringLectureParts", "Course3"),
+            Arguments.of("group", "course", "modifyLectureParts", "N.Surname3"),
 
-                Arguments.of("teacher", "dateAndTime", "stringLectureParts", "address/0"),
-                Arguments.of("teacher", "room", "stringLectureParts", "Course4"),
-                Arguments.of("teacher", "course", "modifyLectureParts", "Group4"),
+            Arguments.of("teacher", "dateAndTime", "stringLectureParts", "address/0"),
+            Arguments.of("teacher", "room", "stringLectureParts", "Course4"),
+            Arguments.of("teacher", "course", "modifyLectureParts", "Group4"),
 
-                Arguments.of("room", "dateAndTime", "stringLectureParts", "Group3"),
-                Arguments.of("room", "group", "stringLectureParts", "Course3"),
-                Arguments.of("room", "course", "modifyLectureParts", "N.Surname3"));
+            Arguments.of("room", "dateAndTime", "stringLectureParts", "Group3"),
+            Arguments.of("room", "group", "stringLectureParts", "Course3"),
+            Arguments.of("room", "course", "modifyLectureParts", "N.Surname3"));
     }
 
     @ParameterizedTest
     @CsvSource({"'group','course','stringLectureParts','Course3'",
-                "'group','teacher','modifyLectureParts','N.Surname2'",
-                "'group','room','modifyLectureParts','address3/30'",
-                "'teacher','course','stringLectureParts','Course3'",
-                "'teacher','teacher','modifyLectureParts','N.Surname2'",
-                "'teacher','room','modifyLectureParts','address3/30'",
-                "'room','course','stringLectureParts','Course3'",
-                "'room','teacher','modifyLectureParts','N.Surname2'",
-                "'room','room','modifyLectureParts','address3/30'"})
+        "'group','teacher','modifyLectureParts','N.Surname2'",
+        "'group','room','modifyLectureParts','address3/30'",
+        "'teacher','course','stringLectureParts','Course3'",
+        "'teacher','teacher','modifyLectureParts','N.Surname2'",
+        "'teacher','room','modifyLectureParts','address3/30'",
+        "'room','course','stringLectureParts','Course3'",
+        "'room','teacher','modifyLectureParts','N.Surname2'",
+        "'room','room','modifyLectureParts','address3/30'"})
     void testModify(String ownername, String substitute, String exit, String result) throws Exception {
         LocalDate currentDate = LocalDate.parse("02-01-2022", pattern);
         Long lectureId = 99L;
         Integer serialNumberPerDay = 5;
-        Long groupId = 1L;
-        Long courseId = 2L;
-        Long teacherId = 3L;
-        Long roomId = 4L;
+       
         Long ownerId = 1L;
 
         when(lectureServ.retrieveLectureById(lectureId))
-                .thenReturn(new Lecture(99L, 5, currentDate, roomId, teacherId, courseId, groupId));
-        when(courseServ.retrieveFreeByGroupWithFreeTeachersByTime(groupId, currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Course(3L, "Course3", "Description3")));
-        when(teacherServ.retrieveFreeByTimeForCourse(courseId, currentDate, serialNumberPerDay))
-                .thenReturn(Arrays.asList(new Teacher(2L, "Name2", "Surname2")));
-        when(roomServ.retrieveFreeByTime(currentDate, serialNumberPerDay)) 
-                .thenReturn(Arrays.asList(new Room(3L, "address3", 30)));
+            .thenReturn(new Lecture(99L, serialNumberPerDay, currentDate, room, teacher, course, group));
+        when(courseServ.retrieveFreeByGroupWithFreeTeachersByTime(group.getId(), currentDate, serialNumberPerDay))
+            .thenReturn(Arrays.asList(new Course(3L, "Course3", "Description3")));
+        when(teacherServ.retrieveFreeByTimeForCourse(course.getId(), currentDate, serialNumberPerDay))
+            .thenReturn(Arrays.asList(new Teacher(2L, "Name2", "Surname2")));
+        when(roomServ.retrieveFreeByTime(currentDate, serialNumberPerDay))
+            .thenReturn(Arrays.asList(new Room(3L, "address3", 30)));
+        when(mapperUtil.toDto(new Lecture(99L, serialNumberPerDay, currentDate, room, teacher, course, group)))
+        .thenReturn(new LectureDto(99L, serialNumberPerDay, currentDate, room.getId(), teacher.getId(), course.getId(), group.getId()));
 
         mockMvc.perform(get("/lectures/modify").queryParam("substitute", substitute)
                 .queryParam("lectureId", lectureId.toString())
                 .queryParam("serialNumberPerDay", serialNumberPerDay.toString()).queryParam("date", "2022-01-02")
-                .queryParam("teacherId", teacherId.toString()).queryParam("roomId", roomId.toString())
-                .queryParam("courseId", courseId.toString()).queryParam("groupId", groupId.toString())
+                .queryParam("teacherId", teacher.getId().toString()).queryParam("roomId", room.getId().toString())
+                .queryParam("courseId", course.getId().toString()).queryParam("groupId", group.getId().toString())
                 .queryParam("ownername", ownername).queryParam("ownerId", ownerId.toString())
                 .queryParam("startDate", "2022-01-01").queryParam("finishDate", "2022-01-03")).andDo(print())
-                .andExpect(status().is(200)).andExpect(view().name("lectures/" + exit))
-                .andExpect(content().string(containsString(result)));
+            .andExpect(status().is(200)).andExpect(view().name("lectures/" + exit))
+            .andExpect(content().string(containsString(result)));
     }
 
     @Test
     void testReloadLecture() throws Exception {
         String ownername = "group";
         Long ownerId = 18L;
-        Lecture lecture = new Lecture(99L, 1, LocalDate.parse("2022-01-02"), 1L, 1L, 1L, 1L);
+        LectureDto lectureDto = new LectureDto(99L, 1, LocalDate.parse("2022-01-02"), room.getId(), teacher.getId(), course.getId(), group.getId());
+        Lecture lecture = new Lecture(99L, 1, LocalDate.parse("2022-01-02"), room, teacher, course, group);
 
         when(lectureServ.enter(lecture)).thenReturn(lecture);
+        when(mapperUtil.toEntity(lectureDto)).thenReturn(lecture);
         when(adapter.getPage("2022-01-01", LocalDate.parse("2022-01-02"))).thenReturn(2);
 
         mockMvc.perform(patch("/lectures")
-                .flashAttr("lecture", lecture)
+                .flashAttr("lecture", lectureDto)
                 .queryParam("ownername", ownername)
                 .queryParam("ownerId", ownerId.toString())
                 .queryParam("startDate", "2022-01-01")
                 .queryParam("finishDate", "2022-01-03"))
-        .andExpect(status().is(302))
-                .andExpect(view().name(
-                        "redirect:/lectures/group/18/day?startDate=2022-01-01&finishDate=2022-01-03&page=2&mode=creater"));
+            .andExpect(status().is(302))
+            .andExpect(view().name(
+                "redirect:/lectures/group/18/day?startDate=2022-01-01&finishDate=2022-01-03&page=2&mode=creater"));
 
         verify(lectureServ).enter(lecture);
+        verify(mapperUtil).toEntity(lectureDto);
         verify(adapter).getPage("2022-01-01", LocalDate.parse("2022-01-02"));
 
     }
@@ -779,8 +807,8 @@ class LecturesControllerTest {
         mockMvc.perform(delete("/lectures/{id}", id).queryParam("ownername", ownername)
                 .queryParam("ownerId", ownerId.toString()).queryParam("startDate", sDate)
                 .queryParam("finishDate", fDate).queryParam("date", cDate)).andExpect(status().is(302))
-                .andExpect(view().name("redirect:/lectures/group/18/day?startDate=" + sDate + "&finishDate=" + fDate
-                        + "&page=2&mode=creater"));
+            .andExpect(view().name("redirect:/lectures/group/18/day?startDate=" + sDate + "&finishDate=" + fDate
+                + "&page=2&mode=creater"));
 
         verify(lectureServ).remove(id);
         verify(adapter).getPage(sDate, LocalDate.parse(cDate));
@@ -789,7 +817,7 @@ class LecturesControllerTest {
     @ParameterizedTest
     @MethodSource("provideLlookForUnoccupied")
     void lookForUnoccupied(String sourcename, Long sourceId, String ownername, Long ownerId, String page,
-            List<String> result) throws Exception {
+                           List<String> result) throws Exception {
         LocalDate startDate = LocalDate.parse("30-12-2022", pattern);
         LocalDate currentDate = LocalDate.parse("31-12-2022", pattern);
         LocalDate finishDate = LocalDate.parse("01-01-2023", pattern);
@@ -797,76 +825,76 @@ class LecturesControllerTest {
         Long lectureId = 1L;
         Integer serialNumberPerDay = 1;
 
-        SortedMap<LocalDate, SortedMap<Integer, List<Lecture>>> timetable = new TreeMap<>();
-        SortedMap<Integer, List<Lecture>> firstDayTimetable = new TreeMap<>();
-        SortedMap<Integer, List<Lecture>> secondDayTimetable = new TreeMap<>();
-        SortedMap<Integer, List<Lecture>> thirdDayTimetable = new TreeMap<>();
+        SortedMap<LocalDate, SortedMap<Integer, List<LectureDto>>> timetable = new TreeMap<>();
+        SortedMap<Integer, List<LectureDto>> firstDayTimetable = new TreeMap<>();
+        SortedMap<Integer, List<LectureDto>> secondDayTimetable = new TreeMap<>();
+        SortedMap<Integer, List<LectureDto>> thirdDayTimetable = new TreeMap<>();
 
-        firstDayTimetable.put(1, new ArrayList<>(Arrays.asList(new Lecture(1, startDate))));
-        firstDayTimetable.put(2, new ArrayList<>(Arrays.asList(new Lecture(2, startDate))));
-        firstDayTimetable.put(3, new ArrayList<>(Arrays.asList(new Lecture(3, startDate))));
-        firstDayTimetable.put(4, new ArrayList<>(Arrays.asList(new Lecture(4, startDate))));
-        firstDayTimetable.put(5, new ArrayList<>(Arrays.asList(new Lecture(5, startDate))));
-        firstDayTimetable.put(6, new ArrayList<>(Arrays.asList(new Lecture(6, startDate))));
+        firstDayTimetable.put(1, new ArrayList<>(Arrays.asList(new LectureDto(1, startDate))));
+        firstDayTimetable.put(2, new ArrayList<>(Arrays.asList(new LectureDto(2, startDate))));
+        firstDayTimetable.put(3, new ArrayList<>(Arrays.asList(new LectureDto(3, startDate))));
+        firstDayTimetable.put(4, new ArrayList<>(Arrays.asList(new LectureDto(4, startDate))));
+        firstDayTimetable.put(5, new ArrayList<>(Arrays.asList(new LectureDto(5, startDate))));
+        firstDayTimetable.put(6, new ArrayList<>(Arrays.asList(new LectureDto(6, startDate))));
         timetable.put(startDate, firstDayTimetable);
 
-        secondDayTimetable.put(1, new ArrayList<>(Arrays.asList(new Lecture(1, currentDate, 1L, 1L, 3L, 1L))));
-        secondDayTimetable.put(2, new ArrayList<>(Arrays.asList(new Lecture(2, currentDate, 1L, 1L, 3L, 1L))));
-        secondDayTimetable.put(3, new ArrayList<>(Arrays.asList(new Lecture(3, currentDate, 1L, 1L, 3L, 2L))));
-        secondDayTimetable.put(4, new ArrayList<>(Arrays.asList(new Lecture(4, currentDate, 1L, 2L, 3L, 1L))));
-        secondDayTimetable.put(5, new ArrayList<>(Arrays.asList(new Lecture(5, currentDate, 2L, 1L, 3L, 1L))));
-        secondDayTimetable.put(6, new ArrayList<>(Arrays.asList(new Lecture(6, currentDate))));
+        secondDayTimetable.put(1, new ArrayList<>(Arrays.asList(new LectureDto(1, currentDate, 1L, 1L, 3L, 1L))));
+        secondDayTimetable.put(2, new ArrayList<>(Arrays.asList(new LectureDto(2, currentDate, 1L, 1L, 3L, 1L))));
+        secondDayTimetable.put(3, new ArrayList<>(Arrays.asList(new LectureDto(3, currentDate, 1L, 1L, 3L, 2L))));
+        secondDayTimetable.put(4, new ArrayList<>(Arrays.asList(new LectureDto(4, currentDate, 1L, 2L, 3L, 1L))));
+        secondDayTimetable.put(5, new ArrayList<>(Arrays.asList(new LectureDto(5, currentDate, 2L, 1L, 3L, 1L))));
+        secondDayTimetable.put(6, new ArrayList<>(Arrays.asList(new LectureDto(6, currentDate))));
         timetable.put(currentDate, secondDayTimetable);
 
-        thirdDayTimetable.put(1, new ArrayList<>(Arrays.asList(new Lecture(1, finishDate, 1L, 2L, 3L, 2L))));
-        thirdDayTimetable.put(2, new ArrayList<>(Arrays.asList(new Lecture(2, finishDate, 2L, 1L, 3L, 2L))));
-        thirdDayTimetable.put(3, new ArrayList<>(Arrays.asList(new Lecture(3, finishDate, 2L, 2L, 3L, 1L))));
+        thirdDayTimetable.put(1, new ArrayList<>(Arrays.asList(new LectureDto(1, finishDate, 1L, 2L, 3L, 2L))));
+        thirdDayTimetable.put(2, new ArrayList<>(Arrays.asList(new LectureDto(2, finishDate, 2L, 1L, 3L, 2L))));
+        thirdDayTimetable.put(3, new ArrayList<>(Arrays.asList(new LectureDto(3, finishDate, 2L, 2L, 3L, 1L))));
         thirdDayTimetable.put(4, new ArrayList<>(
-                Arrays.asList(new Lecture(4, finishDate, 2L, 2L, 3L, 2L), new Lecture(4, finishDate, 3L, 3L, 3L, 3L))));
-        thirdDayTimetable.put(5, new ArrayList<>(Arrays.asList(new Lecture(5, finishDate))));
-        thirdDayTimetable.put(6, new ArrayList<>(Arrays.asList(new Lecture(6, finishDate))));
+            Arrays.asList(new LectureDto(4, finishDate, 2L, 2L, 3L, 2L), new LectureDto(4, finishDate, 3L, 3L, 3L, 3L))));
+        thirdDayTimetable.put(5, new ArrayList<>(Arrays.asList(new LectureDto(5, finishDate))));
+        thirdDayTimetable.put(6, new ArrayList<>(Arrays.asList(new LectureDto(6, finishDate))));
         timetable.put(finishDate, thirdDayTimetable);
 
         List<List<LocalDate>> timeImage = Arrays.asList(
-                Arrays.asList(LocalDate.parse("01-12-2022", pattern), LocalDate.parse("02-12-2022", pattern),
-                        LocalDate.parse("03-12-2022", pattern), LocalDate.parse("04-12-2022", pattern),
-                        LocalDate.parse("05-12-2022", pattern), LocalDate.parse("06-12-2022", pattern),
-                        LocalDate.parse("07-12-2022", pattern), LocalDate.parse("08-12-2022", pattern),
-                        LocalDate.parse("09-12-2022", pattern), LocalDate.parse("10-12-2022", pattern),
-                        LocalDate.parse("11-12-2022", pattern), LocalDate.parse("12-12-2022", pattern),
-                        LocalDate.parse("13-12-2022", pattern), LocalDate.parse("14-12-2022", pattern),
-                        LocalDate.parse("15-12-2022", pattern), LocalDate.parse("16-12-2022", pattern),
-                        LocalDate.parse("17-12-2022", pattern), LocalDate.parse("18-12-2022", pattern),
-                        LocalDate.parse("19-12-2022", pattern), LocalDate.parse("20-12-2022", pattern),
-                        LocalDate.parse("21-12-2022", pattern), LocalDate.parse("22-12-2022", pattern),
-                        LocalDate.parse("23-12-2022", pattern), LocalDate.parse("24-12-2022", pattern),
-                        LocalDate.parse("25-12-2022", pattern), LocalDate.parse("26-12-2022", pattern),
-                        LocalDate.parse("27-12-2022", pattern), LocalDate.parse("28-12-2022", pattern),
-                        LocalDate.parse("29-12-2022", pattern), LocalDate.parse("30-12-2022", pattern),
-                        LocalDate.parse("31-12-2022", pattern)),
-                Arrays.asList(LocalDate.parse("01-01-2023", pattern), LocalDate.parse("02-01-2023", pattern),
-                        LocalDate.parse("03-01-2023", pattern), LocalDate.parse("04-01-2023", pattern),
-                        LocalDate.parse("05-01-2023", pattern), LocalDate.parse("06-01-2023", pattern),
-                        LocalDate.parse("07-01-2023", pattern), LocalDate.parse("08-01-2023", pattern),
-                        LocalDate.parse("09-01-2023", pattern), LocalDate.parse("10-01-2023", pattern),
-                        LocalDate.parse("11-01-2023", pattern), LocalDate.parse("12-01-2023", pattern),
-                        LocalDate.parse("13-01-2023", pattern), LocalDate.parse("14-01-2023", pattern),
-                        LocalDate.parse("15-01-2023", pattern), LocalDate.parse("16-01-2023", pattern),
-                        LocalDate.parse("17-01-2023", pattern), LocalDate.parse("18-01-2023", pattern),
-                        LocalDate.parse("19-01-2023", pattern), LocalDate.parse("20-01-2023", pattern),
-                        LocalDate.parse("21-01-2023", pattern), LocalDate.parse("22-01-2023", pattern),
-                        LocalDate.parse("23-01-2023", pattern), LocalDate.parse("24-01-2023", pattern),
-                        LocalDate.parse("25-01-2023", pattern), LocalDate.parse("26-01-2023", pattern),
-                        LocalDate.parse("27-01-2023", pattern), LocalDate.parse("28-01-2023", pattern),
-                        LocalDate.parse("29-01-2023", pattern), LocalDate.parse("30-01-2023", pattern),
-                        LocalDate.parse("31-01-2023", pattern)));
+            Arrays.asList(LocalDate.parse("01-12-2022", pattern), LocalDate.parse("02-12-2022", pattern),
+                LocalDate.parse("03-12-2022", pattern), LocalDate.parse("04-12-2022", pattern),
+                LocalDate.parse("05-12-2022", pattern), LocalDate.parse("06-12-2022", pattern),
+                LocalDate.parse("07-12-2022", pattern), LocalDate.parse("08-12-2022", pattern),
+                LocalDate.parse("09-12-2022", pattern), LocalDate.parse("10-12-2022", pattern),
+                LocalDate.parse("11-12-2022", pattern), LocalDate.parse("12-12-2022", pattern),
+                LocalDate.parse("13-12-2022", pattern), LocalDate.parse("14-12-2022", pattern),
+                LocalDate.parse("15-12-2022", pattern), LocalDate.parse("16-12-2022", pattern),
+                LocalDate.parse("17-12-2022", pattern), LocalDate.parse("18-12-2022", pattern),
+                LocalDate.parse("19-12-2022", pattern), LocalDate.parse("20-12-2022", pattern),
+                LocalDate.parse("21-12-2022", pattern), LocalDate.parse("22-12-2022", pattern),
+                LocalDate.parse("23-12-2022", pattern), LocalDate.parse("24-12-2022", pattern),
+                LocalDate.parse("25-12-2022", pattern), LocalDate.parse("26-12-2022", pattern),
+                LocalDate.parse("27-12-2022", pattern), LocalDate.parse("28-12-2022", pattern),
+                LocalDate.parse("29-12-2022", pattern), LocalDate.parse("30-12-2022", pattern),
+                LocalDate.parse("31-12-2022", pattern)),
+            Arrays.asList(LocalDate.parse("01-01-2023", pattern), LocalDate.parse("02-01-2023", pattern),
+                LocalDate.parse("03-01-2023", pattern), LocalDate.parse("04-01-2023", pattern),
+                LocalDate.parse("05-01-2023", pattern), LocalDate.parse("06-01-2023", pattern),
+                LocalDate.parse("07-01-2023", pattern), LocalDate.parse("08-01-2023", pattern),
+                LocalDate.parse("09-01-2023", pattern), LocalDate.parse("10-01-2023", pattern),
+                LocalDate.parse("11-01-2023", pattern), LocalDate.parse("12-01-2023", pattern),
+                LocalDate.parse("13-01-2023", pattern), LocalDate.parse("14-01-2023", pattern),
+                LocalDate.parse("15-01-2023", pattern), LocalDate.parse("16-01-2023", pattern),
+                LocalDate.parse("17-01-2023", pattern), LocalDate.parse("18-01-2023", pattern),
+                LocalDate.parse("19-01-2023", pattern), LocalDate.parse("20-01-2023", pattern),
+                LocalDate.parse("21-01-2023", pattern), LocalDate.parse("22-01-2023", pattern),
+                LocalDate.parse("23-01-2023", pattern), LocalDate.parse("24-01-2023", pattern),
+                LocalDate.parse("25-01-2023", pattern), LocalDate.parse("26-01-2023", pattern),
+                LocalDate.parse("27-01-2023", pattern), LocalDate.parse("28-01-2023", pattern),
+                LocalDate.parse("29-01-2023", pattern), LocalDate.parse("30-01-2023", pattern),
+                LocalDate.parse("31-01-2023", pattern)));
 
         when(teacherServ.retrieveAll()).thenReturn(Arrays.asList(new Teacher(1L, "Name1", "Surname1"),
-                new Teacher(2L, "Name2", "Surname2"), new Teacher(3L, "Name3", "Surname3")));
+            new Teacher(2L, "Name2", "Surname2"), new Teacher(3L, "Name3", "Surname3")));
         when(groupServ.retrieveAll()).thenReturn(
-                Arrays.asList(new Group(1L, "groupName1"), new Group(2L, "groupName2"), new Group(3L, "groupName3")));
+            Arrays.asList(new Group(1L, "groupName1"), new Group(2L, "groupName2"), new Group(3L, "groupName3")));
         when(roomServ.retrieveAll()).thenReturn(Arrays.asList(new Room(1L, "address1", 10),
-                new Room(2L, "address2", 20), new Room(3L, "address3", 30)));
+            new Room(2L, "address2", 20), new Room(3L, "address3", 30)));
         when(courseServ.retrieveAll()).thenReturn(Arrays.asList(new Course(3L, "Course3", "Description3")));
 
         when(adapter.stretchMonthTimeline(startDate, finishDate)).thenReturn(timeImage);
@@ -879,25 +907,25 @@ class LecturesControllerTest {
                 .queryParam("date", "2022-12-31").queryParam("groupId", "1").queryParam("teacherId", "1")
                 .queryParam("courseId", "3").queryParam("roomId", "1")
 
-        ).andExpect(status().is(200)).andExpect(view().name("lectures/stringLectures"))
-                .andExpect(content().string(containsString(lectureId.toString())))
-                .andExpect(content().string(containsString("2022-12-30")))
-                .andExpect(content().string(containsString("2023-01-01")))
-                .andExpect(content().string(containsString(result.get(0))))
-                .andExpect(content().string(containsString(result.get(1))))
-                .andExpect(content().string(containsString(result.get(2))))
-                .andExpect(content().string(containsString(result.get(3))))
-                .andExpect(content().string(containsString(result.get(4))))
-                .andExpect(content().string(containsString(result.get(5))))
-                .andExpect(content().string(containsString(result.get(6))))
-                .andExpect(content().string(containsString(result.get(7))))
-                .andExpect(content().string(containsString(result.get(8))))
-                .andExpect(content().string(containsString(result.get(9))))
-                .andExpect(content().string(containsString(result.get(10))))
-                .andExpect(content().string(containsString(result.get(11))))
-                .andExpect(content().string(containsString(result.get(12))))
-                .andExpect(content().string(containsString(result.get(13))))
-                .andExpect(content().string(containsString(result.get(14))));
+            ).andExpect(status().is(200)).andExpect(view().name("lectures/stringLectures"))
+            .andExpect(content().string(containsString(lectureId.toString())))
+            .andExpect(content().string(containsString("2022-12-30")))
+            .andExpect(content().string(containsString("2023-01-01")))
+            .andExpect(content().string(containsString(result.get(0))))
+            .andExpect(content().string(containsString(result.get(1))))
+            .andExpect(content().string(containsString(result.get(2))))
+            .andExpect(content().string(containsString(result.get(3))))
+            .andExpect(content().string(containsString(result.get(4))))
+            .andExpect(content().string(containsString(result.get(5))))
+            .andExpect(content().string(containsString(result.get(6))))
+            .andExpect(content().string(containsString(result.get(7))))
+            .andExpect(content().string(containsString(result.get(8))))
+            .andExpect(content().string(containsString(result.get(9))))
+            .andExpect(content().string(containsString(result.get(10))))
+            .andExpect(content().string(containsString(result.get(11))))
+            .andExpect(content().string(containsString(result.get(12))))
+            .andExpect(content().string(containsString(result.get(13))))
+            .andExpect(content().string(containsString(result.get(14))));
     }
 
     private static Stream<Arguments> provideLlookForUnoccupied() {
@@ -906,102 +934,113 @@ class LecturesControllerTest {
         String fDate = "2023-01-01";
         String cDate = "2022-12-31";
         return Stream.of(
-                Arguments.of("group", 1L, "", null, "",
-                        Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
-                                "eat me", "eat me", "eat me", "eat me", "eat me", cDate, "it is taken", "it is taken",
-                                "eat me", "it is taken", "it is taken", "eat me")),
-                Arguments.of("group", 1L, "", null, "1",
-                        Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
-                                "eat me", "eat me", "eat me", "eat me", "eat me", cDate, "it is taken", "it is taken",
-                                "eat me", "it is taken", "it is taken", "eat me")),
-                Arguments.of("group", 1L, "", null, "2",
-                        Arrays.asList(fDate, "eat me", "eat me", "it is taken", "eat me", "eat me", "eat me",
-                                "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
-                                "")),
-                Arguments.of("something", 9999L, "group", 1L, "2",
-                        Arrays.asList(fDate, "eat me", "eat me", "it is taken", "eat me", "eat me", "eat me",
-                                "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
-                                "")),
+            Arguments.of("group", 1L, "", null, "",
+                Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
+                    "eatMe", "eatMe", "eatMe", "eatMe", "eatMe", cDate, "it is taken", "it is taken",
+                    "eatMe", "it is taken", "it is taken", "eatMe")),
+            Arguments.of("group", 1L, "", null, "1",
+                Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
+                    "eatMe", "eatMe", "eatMe", "eatMe", "eatMe", cDate, "it is taken", "it is taken",
+                    "eatMe", "it is taken", "it is taken", "eatMe")),
+            Arguments.of("group", 1L, "", null, "2",
+                Arrays.asList(fDate, "eatMe", "eatMe", "it is taken", "eatMe", "eatMe", "eatMe",
+                    "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
+                    "")),
+            Arguments.of("something", 9999L, "group", 1L, "2",
+                Arrays.asList(fDate, "eatMe", "eatMe", "it is taken", "eatMe", "eatMe", "eatMe",
+                    "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
+                    "")),
 
-                Arguments.of("teacher", 1L, "", null, "",
-                        Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
-                                "eat me", "eat me", "eat me", "eat me", "eat me", cDate, "it is taken", "it is taken",
-                                "it is taken", "eat me", "it is taken", "eat me")),
-                Arguments.of("teacher", 1L, "", null, "1",
-                        Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
-                                "eat me", "eat me", "eat me", "eat me", "eat me", cDate, "it is taken", "it is taken",
-                                "it is taken", "eat me", "it is taken", "eat me")),
-                Arguments.of("teacher", 1L, "", null, "2",
-                        Arrays.asList(fDate, "eat me", "it is taken", "eat me", "eat me", "eat me", "eat me",
-                                "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
-                                "")),
-                Arguments.of("something", 9999L, "teacher", 1L, "2",
-                        Arrays.asList(fDate, "eat me", "it is taken", "eat me", "eat me", "eat me", "eat me",
-                                "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
-                                "")),
+            Arguments.of("teacher", 1L, "", null, "",
+                Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
+                    "eatMe", "eatMe", "eatMe", "eatMe", "eatMe", cDate, "it is taken", "it is taken",
+                    "it is taken", "eatMe", "it is taken", "eatMe")),
+            Arguments.of("teacher", 1L, "", null, "1",
+                Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
+                    "eatMe", "eatMe", "eatMe", "eatMe", "eatMe", cDate, "it is taken", "it is taken",
+                    "it is taken", "eatMe", "it is taken", "eatMe")),
+            Arguments.of("teacher", 1L, "", null, "2",
+                Arrays.asList(fDate, "eatMe", "it is taken", "eatMe", "eatMe", "eatMe", "eatMe",
+                    "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
+                    "")),
+            Arguments.of("something", 9999L, "teacher", 1L, "2",
+                Arrays.asList(fDate, "eatMe", "it is taken", "eatMe", "eatMe", "eatMe", "eatMe",
+                    "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
+                    "")),
 
-                Arguments.of("room", 1L, "", null, "",
-                        Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
-                                "eat me", "eat me", "eat me", "eat me", "eat me", cDate, "it is taken", "it is taken",
-                                "it is taken", "it is taken", "eat me", "eat me")),
-                Arguments.of("room", 1L, "", null, "1",
-                        Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
-                                "eat me", "eat me", "eat me", "eat me", "eat me", cDate, "it is taken", "it is taken",
-                                "it is taken", "it is taken", "eat me", "eat me")),
-                Arguments.of("room", 1L, "", null, "2",
-                        Arrays.asList(fDate, "it is taken", "eat me", "eat me", "eat me", "eat me", "eat me",
-                                "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
-                                "")),
-                Arguments.of("something", 9999L, "room", 1L, "2",
-                        Arrays.asList(fDate, "it is taken", "eat me", "eat me", "eat me", "eat me", "eat me",
-                                "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
-                                "")));
+            Arguments.of("room", 1L, "", null, "",
+                Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
+                    "eatMe", "eatMe", "eatMe", "eatMe", "eatMe", cDate, "it is taken", "it is taken",
+                    "it is taken", "it is taken", "eatMe", "eatMe")),
+            Arguments.of("room", 1L, "", null, "1",
+                Arrays.asList("2022-12-01", "beyond a given time", "2022-12-29", "beyond a given time", sDate,
+                    "eatMe", "eatMe", "eatMe", "eatMe", "eatMe", cDate, "it is taken", "it is taken",
+                    "it is taken", "it is taken", "eatMe", "eatMe")),
+            Arguments.of("room", 1L, "", null, "2",
+                Arrays.asList(fDate, "it is taken", "eatMe", "eatMe", "eatMe", "eatMe", "eatMe",
+                    "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
+                    "")),
+            Arguments.of("something", 9999L, "room", 1L, "2",
+                Arrays.asList(fDate, "it is taken", "eatMe", "eatMe", "eatMe", "eatMe", "eatMe",
+                    "2023-01-02", "beyond a given time", "2023-01-31", "beyond a given time", "", "", "",
+                    "")));
 
     }
 
     @ParameterizedTest
     @MethodSource("provideMakeClone")
-    void testMakeClone(String markMoveOwner, String [] timeSpots, String sourcename, List<Lecture> expected)
-            throws Exception {
-
+    void testMakeClone(String markMoveOwner, String[] timeSpots, String sourcename, List<Lecture> expected)
+        throws Exception {
+        Course theCourse = new Course(3L, "course", "descriptopn");
         String startDate = "2022-12-31";
         String finishDate = "2023-01-02";
         String sourceId = "1";
+        
+        when(mapperUtil.toEntity(new LectureDto(1, LocalDate.parse("2022-12-31"), room.getId(), teacher.getId(), theCourse.getId(), group.getId())))
+        .thenReturn(new Lecture(1, LocalDate.parse("2022-12-31"), room, teacher, theCourse, group));
+        when(mapperUtil.toEntity(new LectureDto(1L, 1, LocalDate.parse("2022-12-31"), room.getId(), teacher.getId(), theCourse.getId(), group.getId())))
+        .thenReturn(new Lecture(1L, 1, LocalDate.parse("2022-12-31"), room, teacher, theCourse, group));
+        
+        when(mapperUtil.toEntity(new LectureDto(2, LocalDate.parse("2022-01-01"), room.getId(), teacher.getId(), theCourse.getId(), group.getId())))
+        .thenReturn(new Lecture(2, LocalDate.parse("2022-01-01"), room, teacher, theCourse, group));
+        when(mapperUtil.toEntity(new LectureDto(4, LocalDate.parse("2022-01-02"), room.getId(), teacher.getId(), theCourse.getId(), group.getId())))
+        .thenReturn(new Lecture(4, LocalDate.parse("2022-01-02"), room, teacher, theCourse, group));
         
         mockMvc.perform(post("/lectures/clone").param("groupId", "1").param("teacherId", "1").param("roomId", "1")
                 .param("courseId", "3").param("startDate", startDate).param("finishDate", finishDate)
                 .param("markMoveOwner", markMoveOwner).param("timeSpots", timeSpots).param("sourceId", sourceId)
                 .param("sourcename", sourcename)).andExpect(status().is(302))
-                .andExpect(view().name("redirect:/lectures/" + sourcename + "/" + sourceId + "/month?startDate="
-                        + startDate + "&finishDate=" + finishDate));
-
+            .andExpect(view().name("redirect:/lectures/" + sourcename + "/" + sourceId + "/month?startDate="
+                + startDate + "&finishDate=" + finishDate));
+        
         verify(lectureServ, times(timeSpots.length)).enter(lectureCaptor.capture());
-        
-       assertEquals(expected, lectureCaptor.getAllValues());
+
+        assertEquals(expected, lectureCaptor.getAllValues());
     }
-    
+
     private static Stream<Arguments> provideMakeClone() {
-        String[] timeSpots = { "1 2022-12-31", "2 2022-01-01", "4 2022-01-02" };
-        List<Lecture>addExpected = Arrays.asList(
-                new Lecture(1, LocalDate.parse("2022-12-31"), 1L, 1L, 3L, 1L),
-                new Lecture(2, LocalDate.parse("2022-01-01"), 1L, 1L, 3L, 1L),
-                new Lecture(4, LocalDate.parse("2022-01-02"), 1L, 1L, 3L, 1L)
-                );
-        List<Lecture>moveExpected = Arrays.asList(
-                new Lecture(1L, 1, LocalDate.parse("2022-12-31"), 1L, 1L, 3L, 1L),
-                new Lecture(2, LocalDate.parse("2022-01-01"), 1L, 1L, 3L, 1L),
-                new Lecture(4, LocalDate.parse("2022-01-02"), 1L, 1L, 3L, 1L)
-                );
-        
+        String[] timeSpots = {"1 2022-12-31", "2 2022-01-01", "4 2022-01-02"};
+        Course theCourse = new Course(3L, "course", "descriptopn");
+        List<Lecture> addExpected = Arrays.asList(
+            new Lecture(1, LocalDate.parse("2022-12-31"), room, teacher, theCourse, group),
+            new Lecture(2, LocalDate.parse("2022-01-01"), room, teacher, theCourse, group),
+            new Lecture(4, LocalDate.parse("2022-01-02"), room, teacher, theCourse, group)
+        );
+        List<Lecture> moveExpected = Arrays.asList(
+            new Lecture(1L, 1, LocalDate.parse("2022-12-31"), room, teacher, theCourse, group),
+            new Lecture(2, LocalDate.parse("2022-01-01"), room, teacher, theCourse, group),
+            new Lecture(4, LocalDate.parse("2022-01-02"), room, teacher, theCourse, group)
+        );
+
         //String markMoveOwner, String [] timeSpots, String sourcename, List<Lecture> expected
-              return Stream.of(
-                      Arguments.of("1", timeSpots, "group", moveExpected),
-                      Arguments.of("", timeSpots, "group", addExpected),
-                      Arguments.of("1", timeSpots, "teacher", moveExpected),
-                      Arguments.of("", timeSpots, "teacher", addExpected),
-                      Arguments.of("1", timeSpots, "room", moveExpected),
-                      Arguments.of("", timeSpots, "room", addExpected)
-                      );
+        return Stream.of(
+            Arguments.of("1", timeSpots, "group", moveExpected),
+            Arguments.of("", timeSpots, "group", addExpected),
+            Arguments.of("1", timeSpots, "teacher", moveExpected),
+            Arguments.of("", timeSpots, "teacher", addExpected),
+            Arguments.of("1", timeSpots, "room", moveExpected),
+            Arguments.of("", timeSpots, "room", addExpected)
+        );
     }
 
 }

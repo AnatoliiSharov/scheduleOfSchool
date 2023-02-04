@@ -3,18 +3,21 @@ package ua.com.foxminded.asharov.universityschedule.controller;
 
 import java.util.List;
 
+import javax.validation.Valid;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import ua.com.foxminded.asharov.universityschedule.model.Group;
-import ua.com.foxminded.asharov.universityschedule.model.Student;
+import ua.com.foxminded.asharov.universityschedule.dto.StudentDto;
+import ua.com.foxminded.asharov.universityschedule.dto.util.MapperUtil;
+import ua.com.foxminded.asharov.universityschedule.entity.Group;
 import ua.com.foxminded.asharov.universityschedule.service.GroupService;
 import ua.com.foxminded.asharov.universityschedule.service.StudentService;
 
@@ -23,15 +26,19 @@ import ua.com.foxminded.asharov.universityschedule.service.StudentService;
 public class StudentsController {
     static final String OWNERNAME = "ownername";  
     static final String STUDENT = "student";  
-    static final String OWNER = "owner";  
+    static final String OWNER = "owner";
     static final String ASSETS = "assets";  
+    static final String ASSETNAME = "assetname";  
+    static final String GROUP = "group";  
     
     private final GroupService groupServ;
     private final StudentService studentServ;
+    private final MapperUtil mapperUtil;
 
-    public StudentsController(GroupService groupServ, StudentService studentServ) {
+    public StudentsController(GroupService groupServ, StudentService studentServ, MapperUtil mapperUtil) {
         this.groupServ = groupServ;
         this.studentServ = studentServ;
+        this.mapperUtil = mapperUtil;
     }
 
     @GetMapping()
@@ -52,34 +59,48 @@ public class StudentsController {
     @GetMapping("/new")
     public String inviteNew(Model model) {
         model.addAttribute(OWNERNAME, STUDENT);
-        model.addAttribute(OWNER, new Student());
-        model.addAttribute("assetname", "group");
+        model.addAttribute(OWNER, new StudentDto());
+        model.addAttribute(ASSETNAME, GROUP);
         model.addAttribute(ASSETS, groupServ.retrieveAll());
         return "/students/newbie";
     }
 
     @PostMapping()
-    public String load(@ModelAttribute(STUDENT) Student student, Model model) {
-        return "redirect:students/" + studentServ.enter(student).getId();
+    public String load(@Valid @ModelAttribute(OWNER) StudentDto studentDto, BindingResult result, Model model) {
+        List<Group>assets = groupServ.retrieveAll();
+        
+        model.addAttribute(OWNER, studentDto);
+        model.addAttribute(OWNERNAME, STUDENT);
+        model.addAttribute(ASSETS, assets);
+        model.addAttribute(ASSETNAME, GROUP);
+        
+        if(result.hasErrors()) {
+            
+            if(studentDto.getId()!=null) {
+                Group ownedAsset = groupServ.retrieveById(studentDto.getGroupId());
+                
+                assets.remove(ownedAsset);
+                model.addAttribute("ownedassets", ownedAsset);
+                return "/students/modification";
+            }else {
+                return "/students/newbie";
+            }
+         }
+         return "redirect:students/" + studentServ.enter(mapperUtil.toEntity(studentDto)).getId();
     }
 
     @GetMapping("/{id}/modify")
     public String modify(@PathVariable("id") Long id, Model model) {
-        Group ownedAsset = groupServ.retrieveGroupByStudentId(id);
+        Group ownedAsset = studentServ.retrieveById(id).getGroup();
         List<Group>assets = groupServ.retrieveAll();
         
         assets.remove(ownedAsset);
         model.addAttribute(OWNERNAME, STUDENT);
-        model.addAttribute("assetname", "group");
-        model.addAttribute(OWNER, studentServ.retrieveById(id));
+        model.addAttribute(ASSETNAME, GROUP);
+        model.addAttribute(OWNER,  mapperUtil.toDto(studentServ.retrieveById(id)));
         model.addAttribute(ASSETS, assets);
         model.addAttribute("ownedassets", ownedAsset);
         return "/students/modification";
-    }
-
-    @PatchMapping()
-    public String reload(@ModelAttribute(STUDENT) Student student) {
-        return "redirect:students/" + studentServ.enter(student).getId();
     }
 
     @DeleteMapping("/{id}")

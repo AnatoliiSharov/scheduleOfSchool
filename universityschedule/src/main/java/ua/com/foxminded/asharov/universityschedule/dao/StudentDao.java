@@ -1,8 +1,8 @@
 package ua.com.foxminded.asharov.universityschedule.dao;
 
-import java.util.List;
-
 import ua.com.foxminded.asharov.universityschedule.model.Student;
+
+import java.util.List;
 
 public interface StudentDao extends CrudEntityDao<Student, Long> {
 

@@ -1,9 +1,9 @@
 package ua.com.foxminded.asharov.universityschedule.dao;
 
+import ua.com.foxminded.asharov.universityschedule.model.Entity;
+
 import java.util.List;
 import java.util.Optional;
-
-import ua.com.foxminded.asharov.universityschedule.model.Entity;
 
 public interface CrudEntityDao<T extends Entity<K>, K> {
 

@@ -1,22 +1,19 @@
 package ua.com.foxminded.asharov.universityschedule.dao.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ua.com.foxminded.asharov.universityschedule.model.Room;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_ADDRESS;
-import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_CAPACITY;
-
-import ua.com.foxminded.asharov.universityschedule.model.Room;
+import static ua.com.foxminded.asharov.universityschedule.model.Room.*;
 
 public class RoomDaoUtil implements DaoUtil<Room> {
     private static final Logger logger = LoggerFactory.getLogger(RoomDaoUtil.class);
-    
+
     @Override
     public Room mapRow(ResultSet rs, int rowNum) throws SQLException {
         Room room = new Room();

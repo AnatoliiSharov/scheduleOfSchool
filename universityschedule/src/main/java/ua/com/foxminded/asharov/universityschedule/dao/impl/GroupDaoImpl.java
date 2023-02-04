@@ -7,18 +7,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-
 import ua.com.foxminded.asharov.universityschedule.dao.AbstractCrudEntityDao;
 import ua.com.foxminded.asharov.universityschedule.dao.GroupDao;
 import ua.com.foxminded.asharov.universityschedule.dao.util.GroupDaoUtil;
 import ua.com.foxminded.asharov.universityschedule.model.Group;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_TABLE_NAME;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+
+import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_ID;
+import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_TABLE_NAME;
 
 @Repository
 public class GroupDaoImpl extends AbstractCrudEntityDao<Group, Long> implements GroupDao {
@@ -42,7 +41,7 @@ public class GroupDaoImpl extends AbstractCrudEntityDao<Group, Long> implements 
     public GroupDaoImpl(JdbcTemplate template, NamedParameterJdbcTemplate namedParamTemplate) {
         this.template = template;
         this.simpleInsert = new SimpleJdbcInsert(template).withTableName(GROUP_TABLE_NAME)
-                .usingGeneratedKeyColumns(GROUP_ID);
+            .usingGeneratedKeyColumns(GROUP_ID);
         this.namedParamTemplate = namedParamTemplate;
         this.daoUtil = new GroupDaoUtil();
     }
@@ -123,7 +122,7 @@ public class GroupDaoImpl extends AbstractCrudEntityDao<Group, Long> implements 
             return Optional.of(template.queryForObject(SELECT_BY_STUDENT_ID, daoUtil::mapRow, studentId));
         } catch (EmptyResultDataAccessException e) {
             logger.error("findByStudentId for GroupDaoImpl has exeption {} and return EMPTY with studentId = {}", e,
-                    studentId);
+                studentId);
             return Optional.empty();
         }
     }
@@ -131,27 +130,27 @@ public class GroupDaoImpl extends AbstractCrudEntityDao<Group, Long> implements 
     @Override
     public List<Group> findFreeByTime(LocalDate currentDate, int serialNumberPerDay) {
         logger.debug(
-                "findSubstitutesByTime for GroupDaoImpl started with LocalDate currentDate={}, int serialNumberPerDay={}",
-                currentDate, serialNumberPerDay);
+            "findSubstitutesByTime for GroupDaoImpl started with LocalDate currentDate={}, int serialNumberPerDay={}",
+            currentDate, serialNumberPerDay);
         return template.query(SELECT_FREE_BY_TIME, daoUtil::mapRow, currentDate, serialNumberPerDay);
     }
 
     @Override
     public List<Group> findFreeByTimeByTeacherId(Long teacherId, LocalDate currentDate, int serialNumberPerDay) {
         logger.debug(
-                "findFreeLinkedCourseByTimeByTeacherId for GroupDaoImpl started with Long teacherId={}, LocalDate currentDate={}, int serialNumberPerDay={}",
-                teacherId, currentDate, serialNumberPerDay);
+            "findFreeLinkedCourseByTimeByTeacherId for GroupDaoImpl started with Long teacherId={}, LocalDate currentDate={}, int serialNumberPerDay={}",
+            teacherId, currentDate, serialNumberPerDay);
         return template.query(SELECT_FREE_BY_TIME_BY_TEACHER_ID, daoUtil::mapRow, teacherId, currentDate,
-                serialNumberPerDay);
+            serialNumberPerDay);
     }
 
     @Override
     public List<Group> findFreeFreeByTeacherByCourseByTime(Long teacherId, Long courseId, LocalDate currentDate, int serialNumberPerDay) {
         logger.debug(
-                "findFreeByTimeByCourse for GroupDaoImpl started with Long teacherId={}, Long courseId={}, LocalDate currentDate={}, int serialNumberPerDay={}",
-                teacherId, courseId, currentDate, serialNumberPerDay);
+            "findFreeByTimeByCourse for GroupDaoImpl started with Long teacherId={}, Long courseId={}, LocalDate currentDate={}, int serialNumberPerDay={}",
+            teacherId, courseId, currentDate, serialNumberPerDay);
         return template.query(SELECT_FREE_BY_TEACHER_BY_COURSE_BY_TIME, daoUtil::mapRow, teacherId, courseId, currentDate,
-                serialNumberPerDay);
+            serialNumberPerDay);
     }
 
 }

@@ -1,22 +1,19 @@
 package ua.com.foxminded.asharov.universityschedule.dao.util;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Teacher.TEACHER_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Teacher.TEACHER_FIRST_NAME;
-import static ua.com.foxminded.asharov.universityschedule.model.Teacher.TEACHER_LAST_NAME;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ua.com.foxminded.asharov.universityschedule.model.Teacher;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ua.com.foxminded.asharov.universityschedule.model.Teacher;
+import static ua.com.foxminded.asharov.universityschedule.model.Teacher.*;
 
 public class TeacherDaoUtil implements DaoUtil<Teacher> {
     private static final Logger logger = LoggerFactory.getLogger(TeacherDaoUtil.class);
-    
+
     @Override
     public Teacher mapRow(ResultSet rs, int rowNum) throws SQLException {
         Teacher teacher = new Teacher();

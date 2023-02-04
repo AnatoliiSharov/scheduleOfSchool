@@ -1,8 +1,5 @@
 package ua.com.foxminded.asharov.universityschedule.dao.impl;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -10,11 +7,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-
 import ua.com.foxminded.asharov.universityschedule.dao.AbstractCrudEntityDao;
 import ua.com.foxminded.asharov.universityschedule.dao.StudentDao;
 import ua.com.foxminded.asharov.universityschedule.dao.util.StudentDaoUtil;
 import ua.com.foxminded.asharov.universityschedule.model.Student;
+
+import java.util.List;
+import java.util.Optional;
 
 import static ua.com.foxminded.asharov.universityschedule.model.Student.STUDENT_ID;
 import static ua.com.foxminded.asharov.universityschedule.model.Student.STUDENT_TABLE_NAME;
@@ -40,7 +39,7 @@ public class StudentDaoImpl extends AbstractCrudEntityDao<Student, Long> impleme
         this.template = template;
         this.namedParamTemplate = namedParamTemplate;
         this.simpleInsert = new SimpleJdbcInsert(template).withTableName(STUDENT_TABLE_NAME)
-                .usingGeneratedKeyColumns(STUDENT_ID);
+            .usingGeneratedKeyColumns(STUDENT_ID);
         this.studentDaoUtil = new StudentDaoUtil();
     }
 

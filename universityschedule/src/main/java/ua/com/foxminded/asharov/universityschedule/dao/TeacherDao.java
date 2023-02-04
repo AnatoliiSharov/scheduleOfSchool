@@ -1,9 +1,9 @@
 package ua.com.foxminded.asharov.universityschedule.dao;
 
+import ua.com.foxminded.asharov.universityschedule.model.Teacher;
+
 import java.time.LocalDate;
 import java.util.List;
-
-import ua.com.foxminded.asharov.universityschedule.model.Teacher;
 
 public interface TeacherDao extends CrudEntityDao<Teacher, Long> {
 
@@ -17,5 +17,5 @@ public interface TeacherDao extends CrudEntityDao<Teacher, Long> {
 
     List<Teacher> findFreeByTimeByGroupId(Long groupId, LocalDate currentDate, int serialNumberPerDay);
 
-    
+
 }

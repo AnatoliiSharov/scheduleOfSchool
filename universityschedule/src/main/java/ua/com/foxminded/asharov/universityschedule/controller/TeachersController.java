@@ -2,19 +2,18 @@ package ua.com.foxminded.asharov.universityschedule.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
-import ua.com.foxminded.asharov.universityschedule.model.Teacher;
-import ua.com.foxminded.asharov.universityschedule.service.*;
+import ua.com.foxminded.asharov.universityschedule.dto.TeacherDto;
+import ua.com.foxminded.asharov.universityschedule.dto.util.MapperUtil;
+import ua.com.foxminded.asharov.universityschedule.entity.Teacher;
+import ua.com.foxminded.asharov.universityschedule.service.CourseService;
+import ua.com.foxminded.asharov.universityschedule.service.TeacherService;
 
 import java.util.stream.LongStream;
+
+import javax.validation.Valid;
 
 @Controller
 @RequestMapping("/teachers")
@@ -23,20 +22,24 @@ public class TeachersController {
     static final String OWNER = "owner";
     static final String OWNERNAME = "ownername";
     static final String ASSETS = "assets";
-    
+    static final String ASSETSNAME = "assetname";
+    static final String COURSE = "course";
+
     private final TeacherService teacherServ;
     private final CourseService courseServ;
+    private final MapperUtil mapperUtil;
 
-    public TeachersController(TeacherService teacherServ, CourseService courseServ) {
+    public TeachersController(TeacherService teacherServ, CourseService courseServ, MapperUtil mapperUtil) {
         this.teacherServ = teacherServ;
         this.courseServ = courseServ;
+        this.mapperUtil = mapperUtil;
     }
 
     @GetMapping()
     public String showAll(Model model) {
         model.addAttribute(OWNERNAME, LANDLORD);
         model.addAttribute("owners", teacherServ.retrieveAll());
-        return "/"+ LANDLORD +"s/selection";
+        return "/" + LANDLORD + "s/selection";
     }
 
     @GetMapping("/{id}")
@@ -44,53 +47,65 @@ public class TeachersController {
         model.addAttribute(OWNERNAME, LANDLORD);
         model.addAttribute(OWNER, teacherServ.retrieveById(id));
         model.addAttribute(ASSETS, courseServ.retrieveByAccreditedTeacher(id));
-        return "/"+LANDLORD+"s/dashboard";
+        return "/" + LANDLORD + "s/dashboard";
     }
-    
+
     @GetMapping("/new")
     public String inviteNew(Model model) {
         model.addAttribute(OWNERNAME, LANDLORD);
         model.addAttribute(OWNER, new Teacher());
-        model.addAttribute("assetname", "course");
+        model.addAttribute(ASSETSNAME, COURSE);
         model.addAttribute(ASSETS, courseServ.retrieveAll());
-        return "/"+LANDLORD+"s/newbie";
+        return "/" + LANDLORD + "s/newbie";
     }
 
     @PostMapping()
-    public String load(@ModelAttribute(LANDLORD) Teacher teacher,
+    public String load(@Valid @ModelAttribute(OWNER) TeacherDto teacherDto, BindingResult result,
             @RequestParam(value = "ownedCourses", required = false) long[] ownedCourses, Model model) {
-        Teacher freshTeacher = teacherServ.enter(teacher);
+
+        if (result.hasErrors()) {
+            model.addAttribute(OWNERNAME, LANDLORD);
+            model.addAttribute(ASSETSNAME, COURSE);
+            model.addAttribute(ASSETS, courseServ.retrieveAll());
+            model.addAttribute(OWNER, teacherDto);
+            
+            if (teacherDto.getId() != null) {
+                model.addAttribute("ownedassets", courseServ.retrieveByAccreditedTeacher(teacherDto.getId()));
+                return "/" + LANDLORD + "s/modification";
+            } else {
+                model.addAttribute(ASSETS, courseServ.retrieveAll());
+                return "/" + LANDLORD + "s/newbie";
+            }
+        }
+        Teacher freshTeacher = teacherServ.enter(mapperUtil.toEntity(teacherDto));
         
-        if(ownedCourses!=null) {
-        LongStream.of(ownedCourses).forEach(courseId -> courseServ.addAccreditedCourse(freshTeacher.getId(), courseId));
+        if (ownedCourses != null) {
+            LongStream.of(ownedCourses)
+                    .forEach(courseId -> courseServ.addAccreditedCourse(freshTeacher.getId(), courseId));
         }
         return "redirect:" + LANDLORD + "s/" + freshTeacher.getId();
     }
 
     @GetMapping("/{id}/modify")
     public String modify(@PathVariable("id") Long id, Model model) {
-        
         model.addAttribute(OWNERNAME, LANDLORD);
-        model.addAttribute("assetname", "course");
+        model.addAttribute(ASSETSNAME, COURSE);
         model.addAttribute(OWNER, teacherServ.retrieveById(id));
         model.addAttribute(ASSETS, courseServ.retrieveAll());
         model.addAttribute("ownedassets", courseServ.retrieveByAccreditedTeacher(id));
-        return "/"+LANDLORD+"s/modification";
-    }
-
-    @PatchMapping()
-    public String reload(@ModelAttribute(LANDLORD) Teacher teacher) {
-        return "redirect:" + LANDLORD + "s/" + (teacherServ.enter(teacher)).getId();
+        return "/" + LANDLORD + "s/modification";
     }
 
     @PatchMapping("/{id}/add")
-    public String addAccreditedCourse(@RequestParam(value = "teacherId", required = false) Long teacherId, @RequestParam(value = "courseId", required = false) Long courseId) {
+    public String addAccreditedCourse(@RequestParam(value = "teacherId", required = false) Long teacherId,
+            @RequestParam(value = "courseId", required = false) Long courseId) {
         courseServ.addAccreditedCourse(teacherId, courseId);
         return "redirect:modify";
     }
 
     @PatchMapping("/{id}/remove")
-    public String removeAccreditedCourse(@RequestParam(value = "teacherId", required = false) Long teacherId, @RequestParam(value = "courseId", required = false) Long courseId) {
+    public String removeAccreditedCourse(@RequestParam(value = "teacherId", required = false) Long teacherId,
+            @RequestParam(value = "courseId", required = false) Long courseId) {
         courseServ.removeAccreditedCourse(teacherId, courseId);
         return "redirect:modify";
     }
@@ -98,7 +113,7 @@ public class TeachersController {
     @DeleteMapping("/{id}")
     public String delete(@PathVariable("id") Long id) {
         teacherServ.removeById(id);
-        return "redirect:/"+ LANDLORD +"s";
+        return "redirect:/" + LANDLORD + "s";
     }
 
 }

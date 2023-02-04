@@ -1,9 +1,5 @@
 package ua.com.foxminded.asharov.universityschedule.dao.impl;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -11,14 +7,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-
-import ua.com.foxminded.asharov.universityschedule.dao.CourseDao;
 import ua.com.foxminded.asharov.universityschedule.dao.AbstractCrudEntityDao;
+import ua.com.foxminded.asharov.universityschedule.dao.CourseDao;
 import ua.com.foxminded.asharov.universityschedule.dao.util.CourseDaoUtil;
 import ua.com.foxminded.asharov.universityschedule.model.Course;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Course.COURSE_TABLE_NAME;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 import static ua.com.foxminded.asharov.universityschedule.model.Course.COURSE_ID;
+import static ua.com.foxminded.asharov.universityschedule.model.Course.COURSE_TABLE_NAME;
 
 @Repository
 public class CourseDaoImpl extends AbstractCrudEntityDao<Course, Long> implements CourseDao {
@@ -49,7 +48,7 @@ public class CourseDaoImpl extends AbstractCrudEntityDao<Course, Long> implement
         this.template = template;
         this.namedParamTemplate = namedParamTemplate;
         this.simpleInsert = new SimpleJdbcInsert(template).withTableName(COURSE_TABLE_NAME)
-                .usingGeneratedKeyColumns(COURSE_ID);
+            .usingGeneratedKeyColumns(COURSE_ID);
         this.courseDaoUtil = new CourseDaoUtil();
     }
 
@@ -127,7 +126,7 @@ public class CourseDaoImpl extends AbstractCrudEntityDao<Course, Long> implement
     @Override
     public void linkCourseAndTeacher(Long teacherId, Long courseId) {
         logger.debug("linkCourseAndTeacher in CourseDaoImpl with courseId = {} and teacherId = {}", teacherId,
-                courseId);
+            courseId);
         template.update(CREATE_TEACHER_LINK_COURSE, teacherId, courseId);
     }
 
@@ -158,28 +157,28 @@ public class CourseDaoImpl extends AbstractCrudEntityDao<Course, Long> implement
     @Override
     public List<Course> findByAccreditedTeacherForGroup(Long groupId, Long teacherId) {
         logger.debug("findByAccreditedTeacherForGroup in CourseDaoImpl with groupId = {}, teacherId = {}", groupId,
-                teacherId);
+            teacherId);
         return template.query(SELECT_BY_ACCREDITATED_TEACHER_FOR_GROUP, courseDaoUtil::mapRow, groupId, teacherId);
     }
-    
+
     @Override
     public List<Course> findFreeByGroupWithFreeTeachersByTime(Long groupId, LocalDate currentDate,
-            int serialNumberPerDay) {
+                                                              int serialNumberPerDay) {
         logger.debug(
-                "findFreeByGroupWithFreeTeachersByTime in CourseDaoImpl with Long groupId = {}, LocalDate currentDate = {}, int serialNumberPerDay = {}",
-                groupId, currentDate, serialNumberPerDay);
+            "findFreeByGroupWithFreeTeachersByTime in CourseDaoImpl with Long groupId = {}, LocalDate currentDate = {}, int serialNumberPerDay = {}",
+            groupId, currentDate, serialNumberPerDay);
         return template.query(SELECT_FREE_BY_GROUP_ID_WITH_FREE_TEACHERS_BY_TIME, courseDaoUtil::mapRow, groupId,
-                currentDate, serialNumberPerDay);
+            currentDate, serialNumberPerDay);
     }
 
     @Override
     public List<Course> findFreeByTeacherWithAllFreeGroupsByTime(Long techerId, LocalDate currentDate,
-            int serialNumberPerDay) {
+                                                                 int serialNumberPerDay) {
         logger.debug(
-                "retrieveFreeByTeacherWithAllFreeGroupsByTime in CourseDaoImpl with Long techerId = {}, LocalDate currentDate = {}, int serialNumberPerDay = {}",
-                techerId, currentDate, serialNumberPerDay);
+            "retrieveFreeByTeacherWithAllFreeGroupsByTime in CourseDaoImpl with Long techerId = {}, LocalDate currentDate = {}, int serialNumberPerDay = {}",
+            techerId, currentDate, serialNumberPerDay);
         return template.query(SELECT_FREE_BY_TEACHER_ID_WITH_FREE_GROUPS_BY_TIME, courseDaoUtil::mapRow, techerId,
-                currentDate, serialNumberPerDay);
+            currentDate, serialNumberPerDay);
     }
 
 }

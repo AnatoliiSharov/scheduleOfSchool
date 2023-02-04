@@ -1,11 +1,5 @@
 package ua.com.foxminded.asharov.universityschedule.dao.impl;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_TABLE_NAME;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -13,13 +7,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-
-import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_ID;
-
 import ua.com.foxminded.asharov.universityschedule.dao.AbstractCrudEntityDao;
 import ua.com.foxminded.asharov.universityschedule.dao.RoomDao;
 import ua.com.foxminded.asharov.universityschedule.dao.util.RoomDaoUtil;
 import ua.com.foxminded.asharov.universityschedule.model.Room;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_ID;
+import static ua.com.foxminded.asharov.universityschedule.model.Room.ROOM_TABLE_NAME;
 
 @Repository
 public class RoomDaoImpl extends AbstractCrudEntityDao<Room, Long> implements RoomDao {
@@ -42,7 +40,7 @@ public class RoomDaoImpl extends AbstractCrudEntityDao<Room, Long> implements Ro
         this.template = template;
         this.namedParameterTemplate = namedParameterTemplate;
         this.simpleInsert = new SimpleJdbcInsert(template).withTableName(ROOM_TABLE_NAME)
-                .usingGeneratedKeyColumns(ROOM_ID);
+            .usingGeneratedKeyColumns(ROOM_ID);
         this.roomDaoUtil = new RoomDaoUtil();
     }
 
@@ -77,7 +75,7 @@ public class RoomDaoImpl extends AbstractCrudEntityDao<Room, Long> implements Ro
     @Override
     public List<Room> findEqualsOrMoreCapacityRooms(int seatsCapacity) {
         logger.debug("start findEqualsOrMoreCapacityRooms in RoomDaoImpl started with seatsCapacity = {}",
-                seatsCapacity);
+            seatsCapacity);
         return template.query(SELECT_EQUALS_OR_MORE_CAPACITY, roomDaoUtil::mapRow, seatsCapacity);
     }
 
@@ -110,7 +108,7 @@ public class RoomDaoImpl extends AbstractCrudEntityDao<Room, Long> implements Ro
     @Override
     public List<Room> findFreeOneByTime(LocalDate date, int numberPerDay) {
         logger.debug("start findFreeOneByTime in RoomDaoImpl started with date = {}, numberPerDay = {}", date,
-                numberPerDay);
+            numberPerDay);
         return template.query(SELECT_FREE_BY_TIME, roomDaoUtil::mapRow, date, numberPerDay);
     }
 

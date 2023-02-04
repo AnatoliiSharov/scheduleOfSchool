@@ -1,25 +1,25 @@
 <!doctype html>
-<html 
-lang="en"
-xmlns="http://www.w3.org/1999/xhtml"
-xmlns:th="http://www.thymeleaf.org">
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
 
-  <div
-    th:fragment="largeview(group,courses,students)">
+<div
+        th:fragment="largeview(group,courses,students)">
     <legend>Group:</legend>
     <p th:text="'Group name: '+${group.getName()}">Name
-    <p />
-    <p />
+    <p/>
+    <p/>
     <div th:each="course:${courses}">
-      <a
-        th:href="@{/courses/{id}(id=${course.getId()})}"
-        th:text="${course.getName()}">course</a>
+        <a
+                th:href="@{/courses/{id}(id=${course.getId()})}"
+                th:text="${course.getName()}">course</a>
     </div>
-    <p />
+    <p/>
 
     <div th:each="student:${students}">
-      <a
-        th:href="@{/students/{id}(id=${student.getId()})}"
-        th:text="${student.getFirstName()}+''+${student.getLastName()}">course</a>
+        <a
+                th:href="@{/students/{id}(id=${student.getId()})}"
+                th:text="${student.getFirstName()}+''+${student.getLastName()}">course</a>
     </div>
-  </div>
+</div>

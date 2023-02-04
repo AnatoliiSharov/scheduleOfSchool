@@ -1,19 +1,15 @@
 package ua.com.foxminded.asharov.universityschedule.dao.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ua.com.foxminded.asharov.universityschedule.model.Course;
-
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static ua.com.foxminded.asharov.universityschedule.model.Course.COURSE_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Course.COURSE_NAME;
-import static ua.com.foxminded.asharov.universityschedule.model.Course.COURSE_DESCRIPTION;
+import static ua.com.foxminded.asharov.universityschedule.model.Course.*;
 
 public class CourseDaoUtil implements DaoUtil<Course> {
     private static final Logger logger = LoggerFactory.getLogger(CourseDaoUtil.class);

@@ -1,36 +1,36 @@
- <configuration debug="true">
+<configuration debug="true">
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <!-- encoders are assigned the type
-  ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <!-- encoders are assigned the type
+    ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
 
-<property name="LOG_DIR" value="log" />
-<property name="LOG_FILE" value="log" />
-<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <property name="LOG_DIR" value="log"/>
+  <property name="LOG_FILE" value="log"/>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${LOG_DIR}/${LOG_FILE}.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-        <!-- daily rollover -->
-        <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>
+      <!-- daily rollover -->
+      <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>
 
-        <!-- keep 30 days' worth of history capped at 3GB total size -->
-        <maxHistory>30</maxHistory>
-        <totalSizeCap>3GB</totalSizeCap>
+      <!-- keep 30 days' worth of history capped at 3GB total size -->
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>3GB</totalSizeCap>
     </rollingPolicy>
     <encoder>
-        <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
     </encoder>
-</appender> 
-    
-  <logger name="ua.com.foxminded.asharov.universityschedule" level="DEBUG" />
-  <logger name="ua.com.foxminded.asharov.universityschedule.dao.util" level = "DEBUG"/>
-  <logger name="ua.com.foxminded.asharov.universityschedule.servise" level = "DEBUG">
-    <appender-ref ref="FILE" /> 
-  </logger> 
+  </appender>
+
+  <logger name="ua.com.foxminded.asharov.universityschedule" level="DEBUG"/>
+  <logger name="ua.com.foxminded.asharov.universityschedule.dao.util" level="DEBUG"/>
+  <logger name="ua.com.foxminded.asharov.universityschedule.servise" level="DEBUG">
+    <appender-ref ref="FILE"/>
+  </logger>
 
   <root level="DEBUG\">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="FILE"/>
   </root>
 </configuration>

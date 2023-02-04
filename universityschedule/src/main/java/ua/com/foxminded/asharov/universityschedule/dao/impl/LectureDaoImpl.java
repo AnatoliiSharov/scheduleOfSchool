@@ -1,12 +1,5 @@
 package ua.com.foxminded.asharov.universityschedule.dao.impl;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.LECTURE_TABLE_NAME;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.LECTURE_ID;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -14,11 +7,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
-
 import ua.com.foxminded.asharov.universityschedule.dao.AbstractCrudEntityDao;
 import ua.com.foxminded.asharov.universityschedule.dao.LectureDao;
 import ua.com.foxminded.asharov.universityschedule.dao.util.LectureDaoUtil;
 import ua.com.foxminded.asharov.universityschedule.model.Lecture;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static ua.com.foxminded.asharov.universityschedule.model.Lecture.LECTURE_ID;
+import static ua.com.foxminded.asharov.universityschedule.model.Lecture.LECTURE_TABLE_NAME;
 
 @Repository
 public class LectureDaoImpl extends AbstractCrudEntityDao<Lecture, Long> implements LectureDao {
@@ -42,7 +41,7 @@ public class LectureDaoImpl extends AbstractCrudEntityDao<Lecture, Long> impleme
         this.namedParamTemplate = namedParamTemplate;
         this.lectureDaoUtil = new LectureDaoUtil();
         this.simpleInsert = new SimpleJdbcInsert(template).withTableName(LECTURE_TABLE_NAME)
-                .usingGeneratedKeyColumns(LECTURE_ID);
+            .usingGeneratedKeyColumns(LECTURE_ID);
     }
 
     @Override
@@ -76,20 +75,20 @@ public class LectureDaoImpl extends AbstractCrudEntityDao<Lecture, Long> impleme
     @Override
     public List<Lecture> findGroupSchedule(Long groupId, LocalDate startDate, LocalDate finishDate) {
         logger.debug("findGroupSchedule for Lecture started with groupId = {}, LocalDate = {}, finishDate = {}",
-                groupId, startDate, finishDate);
+            groupId, startDate, finishDate);
         return template.query(SELECT_SCHEDULE_GROUP, lectureDaoUtil::mapRow, groupId, startDate, finishDate);
     }
 
     public List<Lecture> findTeacherSchedule(Long teacherId, LocalDate startDate, LocalDate finishDate) {
         logger.debug("findTeacherSchedule for Lecture started with teacherId = {}, LocalDate = {}, finishDate = {}",
-                teacherId, startDate, finishDate);
+            teacherId, startDate, finishDate);
         return template.query(SELECT_SCHEDULE_TEACHER, lectureDaoUtil::mapRow, teacherId, startDate, finishDate);
     }
 
     @Override
     public List<Lecture> findRoomSchedule(Long roomId, LocalDate startDate, LocalDate finishDate) {
         logger.debug("findRoomSchedule for Lecture started with roomId = {}, LocalDate = {}, finishDate = {}", roomId,
-                startDate, finishDate);
+            startDate, finishDate);
         return template.query(SELECT_SCHEDULE_ROOM, lectureDaoUtil::mapRow, roomId, startDate, finishDate);
     }
 

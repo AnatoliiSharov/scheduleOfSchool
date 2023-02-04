@@ -1,39 +1,41 @@
 <!doctype html>
-<html 
-xmlns="http://www.w3.org/1999/xhtml"
-xmlns:th="http://www.thymeleaf.org"
-xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
-lang="en">
+<html
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org"
+        lang="en">
 
 <div th:insert="fragments/general.html :: bootstrap-head"></div>
 <head>
-<title>Ooops!</title>
+    <title>Ooops!</title>
 </head>
 <body>
-  <div th:insert="fragments/general.html :: script-src"></div>
-  <div th:insert="fragments/components/navbar.html :: navbar"></div>
-  <div class="container"></div>
-  
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container"></div>
 
-  <div class="row">
-    <div class="col">  
-    </div>
-    <div class="col">  
-      <span th:text="'there is nothing here'">text</span>
-    </div>
-    <div class="col">  
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">  
-    </div>
-    <div class="col">  
-      <img src="../static/images/nothing.jpg" alt="the man spreads his hands out to sorry" width="700" th:src="@{images/nothing.jpg}"/>
-    </div>
-    <div class="col">  
-    </div>
-  </div>
 
-  
+<div class="row">
+    <div class="col">
+    </div>
+    <div class="col">
+        <span th:text="'there is nothing here, try again please'">text</span>
+        <br/>
+        <span th:text="'with message = '+${message}">text</span>
+    </div>
+    <div class="col">
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+    </div>
+    <div class="col">
+        <img src="../static/images/nothing.jpg" alt="the man spreads his hands out to sorry" width="700"
+             th:src="@{images/nothing.jpg}"/>
+    </div>
+    <div class="col">
+    </div>
+</div>
+
+
 </body>
 </html>

@@ -1,11 +1,11 @@
 package ua.com.foxminded.asharov.universityschedule.service;
 
 import org.springframework.transaction.annotation.Transactional;
-import ua.com.foxminded.asharov.universityschedule.model.Lecture;
+
+import ua.com.foxminded.asharov.universityschedule.entity.Lecture;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.SortedMap;
 
 public interface LectureService {
     @Transactional(readOnly = true)
@@ -18,19 +18,19 @@ public interface LectureService {
     List<Lecture> retrieveRoomLectures(Long roomId, LocalDate startDate, LocalDate finishDate);
 
     @Transactional(readOnly = true)
-    Lecture substituteTeacher(Long teacherId, Lecture lecture);
-    
+    Lecture substituteTeacher(Long teacherId, Long lectureId);
+
     @Transactional(readOnly = true)
-    Lecture retrieveLectureById(Long id);
+    List<Lecture> retrieveAllByGroupIdByTeacherIdByRoomId(Long groupId, Long teacherId, Long roomId,
+            LocalDate startDate, LocalDate finishDate);
 
     @Transactional
     Lecture enter(Lecture lecture);
-    
+
+    @Transactional
+    Lecture retrieveLectureById(Long id);
+
     @Transactional
     void remove(Long id);
-
-    @Transactional(readOnly = true)
-    SortedMap<LocalDate, SortedMap<Integer, List<Lecture>>> retrieveAllByGroupIdByTeacherIdByRoomId(Long groupId,
-            Long teacherId, Long roomId, LocalDate startDate, LocalDate finishDate);
 
 }

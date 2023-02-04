@@ -1,21 +1,20 @@
 package ua.com.foxminded.asharov.universityschedule.dao.util;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_NAME;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ua.com.foxminded.asharov.universityschedule.model.Group;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ua.com.foxminded.asharov.universityschedule.model.Group;
+import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_ID;
+import static ua.com.foxminded.asharov.universityschedule.model.Group.GROUP_NAME;
 
 public class GroupDaoUtil implements DaoUtil<Group> {
     private static final Logger logger = LoggerFactory.getLogger(GroupDaoUtil.class);
-    
+
     @Override
     public Group mapRow(ResultSet rs, int rowNum) throws SQLException {
         Group group = new Group();

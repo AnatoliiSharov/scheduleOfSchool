@@ -22,7 +22,7 @@ public class Lecture extends AbstractEntity<Long> implements Comparable<Lecture>
     private Long groupId;
 
     public Lecture(Long id, Integer serialNumberPerDay, LocalDate date, Long roomId, Long teacherId, Long courseId,
-            Long groupId) {
+                   Long groupId) {
         super(id);
         this.serialNumberPerDay = serialNumberPerDay;
         this.date = date;
@@ -33,7 +33,7 @@ public class Lecture extends AbstractEntity<Long> implements Comparable<Lecture>
     }
 
     public Lecture(Integer serialNumberPerDay, LocalDate date, Long roomId, Long teacherId, Long courseId,
-            Long groupId) {
+                   Long groupId) {
         this(null, serialNumberPerDay, date, roomId, teacherId, courseId, groupId);
     }
 
@@ -128,15 +128,15 @@ public class Lecture extends AbstractEntity<Long> implements Comparable<Lecture>
             return false;
         Lecture other = (Lecture) obj;
         return Objects.equals(courseId, other.courseId) && Objects.equals(date, other.date)
-                && Objects.equals(groupId, other.groupId) && Objects.equals(roomId, other.roomId)
-                && Objects.equals(serialNumberPerDay, other.serialNumberPerDay)
-                && Objects.equals(teacherId, other.teacherId);
+            && Objects.equals(groupId, other.groupId) && Objects.equals(roomId, other.roomId)
+            && Objects.equals(serialNumberPerDay, other.serialNumberPerDay)
+            && Objects.equals(teacherId, other.teacherId);
     }
 
     @Override
     public String toString() {
         return "Lecture [serialNumberPerDay=" + serialNumberPerDay + ", date=" + date + ", teacherId=" + teacherId
-                + ", roomId=" + roomId + ", courseId=" + courseId + ", groupId=" + groupId + "]";
+            + ", roomId=" + roomId + ", courseId=" + courseId + ", groupId=" + groupId + "]";
     }
 
 }

@@ -1,17 +1,15 @@
 package ua.com.foxminded.asharov.universityschedule.controller;
 
+import javax.validation.Valid;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
-import ua.com.foxminded.asharov.universityschedule.model.Group;
+import ua.com.foxminded.asharov.universityschedule.dto.GroupDto;
+import ua.com.foxminded.asharov.universityschedule.dto.util.MapperUtil;
+import ua.com.foxminded.asharov.universityschedule.entity.Group;
 import ua.com.foxminded.asharov.universityschedule.service.CourseService;
 import ua.com.foxminded.asharov.universityschedule.service.GroupService;
 import ua.com.foxminded.asharov.universityschedule.service.StudentService;
@@ -23,23 +21,27 @@ public class GroupsController {
     static final String OWNER = "owner";
     static final String OWNERNAME = "ownername";
     static final String ASSETS = "assets";
-    
+    static final String ASSETNAME = "assetname";
+    static final String COURSE = "course";
+
     private final GroupService groupServ;
     private final CourseService courseServ;
     private final StudentService studentServ;
+    private final MapperUtil mapperUtil;
 
-    public GroupsController(GroupService groupServ,
-            CourseService courseServ, StudentService studentServ) {
+    public GroupsController(GroupService groupServ, CourseService courseServ, StudentService studentServ,
+            MapperUtil mapperUtil) {
         this.groupServ = groupServ;
         this.courseServ = courseServ;
         this.studentServ = studentServ;
+        this.mapperUtil = mapperUtil;
     }
 
     @GetMapping()
     public String showAll(Model model) {
         model.addAttribute(OWNERNAME, LANDLORD);
         model.addAttribute("owners", groupServ.retrieveAll());
-        return "/"+ LANDLORD +"s/selection";
+        return "/" + LANDLORD + "s/selection";
     }
 
     @GetMapping("/{id}")
@@ -48,39 +50,48 @@ public class GroupsController {
         model.addAttribute(OWNER, groupServ.retrieveById(id));
         model.addAttribute(ASSETS, courseServ.retrieveByGroupId(id));
         model.addAttribute("twoassets", studentServ.retrieveByGroupId(id));
-        return "/"+LANDLORD+"s/dashboard";
+        return "/" + LANDLORD + "s/dashboard";
     }
 
     @GetMapping("/new")
     public String inviteNew(Model model) {
         model.addAttribute(OWNERNAME, LANDLORD);
         model.addAttribute(OWNER, new Group());
-        model.addAttribute("assetname", "course");
+        model.addAttribute(ASSETNAME, COURSE);
         model.addAttribute(ASSETS, courseServ.retrieveAll());
-        return "/"+LANDLORD+"s/newbie";
+        return "/" + LANDLORD + "s/newbie";
     }
 
     @PostMapping()
-    public String load(@ModelAttribute(LANDLORD) Group group, Model model) {
-        return "redirect:" + LANDLORD + "s/" + groupServ.enter(group).getId();
+    public String load(@Valid @ModelAttribute(OWNER) GroupDto groupDto, BindingResult result, Model model) {
+
+        if(result.hasErrors()) {
+            model.addAttribute(OWNERNAME, LANDLORD);
+            model.addAttribute(ASSETNAME, COURSE);
+            model.addAttribute(ASSETS, courseServ.retrieveAll());
+            model.addAttribute(OWNER, groupDto);
+            
+            if(groupDto.getId()!=null) {
+                model.addAttribute("ownedassets", courseServ.retrieveByGroupId(groupDto.getId()));
+                return "/" + LANDLORD + "s/modification";
+            }else {
+                return "/" + LANDLORD + "s/newbie"; 
+            }
+        }
+        return "redirect:" + LANDLORD + "s/" + groupServ.enter(mapperUtil.toEntity(groupDto)).getId();
     }
 
     @GetMapping("/{id}/modify")
     public String modify(@PathVariable("id") Long id, Model model) {
 
         model.addAttribute(OWNERNAME, LANDLORD);
-        model.addAttribute("assetname", "course");
+        model.addAttribute(ASSETNAME, COURSE);
         model.addAttribute(OWNER, groupServ.retrieveById(id));
         model.addAttribute(ASSETS, courseServ.retrieveAll());
         model.addAttribute("ownedassets", courseServ.retrieveByGroupId(id));
-        return "/"+LANDLORD+"s/modification";
+        return "/" + LANDLORD + "s/modification";
     }
 
-    @PatchMapping()
-    public String reload(@ModelAttribute(LANDLORD) Group group) {
-        return "redirect:" + LANDLORD + "s/" + groupServ.enter(group).getId();
-    }
-    
     @PatchMapping("/{id}/add")
     public String addAccreditedCourse(@PathVariable("id") Long id,
             @RequestParam(value = "courseId", required = false) Long courseId) {
@@ -98,7 +109,7 @@ public class GroupsController {
     @DeleteMapping("/{id}")
     public String delete(@PathVariable("id") Long id) {
         groupServ.removeById(id);
-        return "redirect:/"+ LANDLORD +"s";
+        return "redirect:/" + LANDLORD + "s";
     }
 
 }

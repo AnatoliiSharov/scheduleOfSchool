@@ -1,29 +1,25 @@
 package ua.com.foxminded.asharov.universityschedule.dao.util;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Student.STUDENT_FIRST_NAME;
-import static ua.com.foxminded.asharov.universityschedule.model.Student.STUDENT_GROUP_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Student.STUDENT_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Student.STUDENT_LAST_NAME;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ua.com.foxminded.asharov.universityschedule.model.Student;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ua.com.foxminded.asharov.universityschedule.model.Student;
+import static ua.com.foxminded.asharov.universityschedule.model.Student.*;
 
 public class StudentDaoUtil implements DaoUtil<Student> {
     private static final Logger logger = LoggerFactory.getLogger(StudentDaoUtil.class);
-    
+
     @Override
     public Student mapRow(ResultSet rs, int rowNum) throws SQLException {
         Student student = new Student();
 
         student.setId(rs.getLong(STUDENT_ID));
-        student.setGroupId((Long)rs.getObject(STUDENT_GROUP_ID));
+        student.setGroupId((Long) rs.getObject(STUDENT_GROUP_ID));
         student.setFirstName(rs.getString(STUDENT_FIRST_NAME));
         student.setLastName(rs.getString(STUDENT_LAST_NAME));
         logger.debug("Student mapRow return course = {}", student);

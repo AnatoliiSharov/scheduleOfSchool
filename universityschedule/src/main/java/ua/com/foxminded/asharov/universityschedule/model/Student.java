@@ -77,13 +77,13 @@ public class Student extends AbstractEntity<Long> {
             return false;
         Student other = (Student) obj;
         return Objects.equals(firstName, other.firstName) && Objects.equals(groupId, other.groupId)
-                && Objects.equals(lastName, other.lastName);
+            && Objects.equals(lastName, other.lastName);
     }
 
     @Override
     public String toString() {
         return "Student [firstName=" + firstName + ", last" + "Name=" + lastName + ", groupId=" + groupId + ", Id=" + id
-                + "]";
+            + "]";
     }
 
 }

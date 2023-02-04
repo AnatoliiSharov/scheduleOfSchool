@@ -1,41 +1,30 @@
 package ua.com.foxminded.asharov.universityschedule.controller;
 
-import java.time.LocalDate;
-import java.time.Period;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.SortedMap;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Adapter.START_POINT_OF_PAGINATION;
+import ua.com.foxminded.asharov.universityschedule.dto.CourseDto;
+import ua.com.foxminded.asharov.universityschedule.dto.GroupDto;
+import ua.com.foxminded.asharov.universityschedule.dto.LectureDto;
+import ua.com.foxminded.asharov.universityschedule.dto.RoomDto;
+import ua.com.foxminded.asharov.universityschedule.dto.TeacherDto;
+import ua.com.foxminded.asharov.universityschedule.dto.util.Adapter;
+import ua.com.foxminded.asharov.universityschedule.dto.util.MapperUtil;
+import ua.com.foxminded.asharov.universityschedule.entity.Course;
+import ua.com.foxminded.asharov.universityschedule.entity.Group;
+import ua.com.foxminded.asharov.universityschedule.entity.Room;
+import ua.com.foxminded.asharov.universityschedule.entity.Teacher;
+import ua.com.foxminded.asharov.universityschedule.exception.UniversityException;
+import ua.com.foxminded.asharov.universityschedule.service.*;
 
-import ua.com.foxminded.asharov.universityschedule.exception.SomethingWrongHappensException;
-import ua.com.foxminded.asharov.universityschedule.model.Adapter;
-import ua.com.foxminded.asharov.universityschedule.model.Course;
-import ua.com.foxminded.asharov.universityschedule.model.Group;
-import ua.com.foxminded.asharov.universityschedule.model.Lecture;
-import ua.com.foxminded.asharov.universityschedule.model.Room;
-import ua.com.foxminded.asharov.universityschedule.model.Teacher;
-import ua.com.foxminded.asharov.universityschedule.service.CourseService;
-import ua.com.foxminded.asharov.universityschedule.service.GroupService;
-import ua.com.foxminded.asharov.universityschedule.service.LectureService;
-import ua.com.foxminded.asharov.universityschedule.service.RoomService;
-import ua.com.foxminded.asharov.universityschedule.service.TeacherService;
+import static ua.com.foxminded.asharov.universityschedule.dto.util.Adapter.START_POINT_OF_PAGINATION;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/lectures")
@@ -65,7 +54,6 @@ public class LecturesController {
     private static final String REDIRECT = "redirect";
     private static final String TIMETABLE = "timetable";
     private static final String LECTURES = "lectures";
-    private static final String SOMETHING_WRONG = "Something wrong happens ";
 
     private final LectureService lectureServ;
     private final TeacherService teacherServ;
@@ -73,17 +61,20 @@ public class LecturesController {
     private final RoomService roomServ;
     private final CourseService courseServ;
     private final Adapter adapter;
+    private final MapperUtil mapperUtil;
 
     public LecturesController(LectureService lectureServ, TeacherService teacherServ, GroupService groupServ,
-            RoomService roomServ, CourseService courseServ, Adapter adapter) {
+            RoomService roomServ, CourseService courseServ, Adapter adapter, MapperUtil mapperUtil) {
         this.lectureServ = lectureServ;
         this.teacherServ = teacherServ;
         this.groupServ = groupServ;
         this.roomServ = roomServ;
         this.courseServ = courseServ;
         this.adapter = adapter;
+        this.mapperUtil = mapperUtil;
     }
 
+    @SuppressWarnings("unchecked")
     @GetMapping(value = { "/{ownername}/{id}", "/{ownername}/{id}/{timeview}", "/{ownername}/{id}/{timeview}" })
     public String showTimetable(@PathVariable("id") Long ownerId, @PathVariable(OWNERNAME) String ownername,
             @PathVariable(value = "timeview", required = false) String timeview,
@@ -93,7 +84,8 @@ public class LecturesController {
             @RequestParam(value = FINISH_DATE, required = false) String fDate,
             @RequestParam(value = "showcase", required = false) String showcase,
             @RequestParam(value = "mode", required = false) String mode, Model model) throws Throwable {
-        model.addAttribute("owner", adapter.getOwnerByIdByName(ownerId, ownername).orElseThrow(() -> new SomethingWrongHappensException(SOMETHING_WRONG + OWNERNAME + " - " + ownername)));
+        model.addAttribute("owner",
+                adapter.getOwnerByIdByName(ownerId, ownername).orElseThrow(() -> new UniversityException(ownername)));
         model.addAttribute(OWNERNAME, ownername != null && ownername.equals("student") ? GROUP : ownername);
 
         if (sDate == null || fDate == null || sDate.length() == 0 || fDate.length() == 0) {
@@ -125,19 +117,21 @@ public class LecturesController {
             page = Period.between(LocalDate.parse(sDate), LocalDate.parse(currentDay)).getDays()
                     + START_POINT_OF_PAGINATION;
         }
-        SortedMap<LocalDate, ArrayList<Lecture>> timetablePerDay = adapter
+        SortedMap<LocalDate, ArrayList<LectureDto>> timetablePerDay = adapter
                 .stuffTimetableByOwnername(LocalDate.parse(sDate), LocalDate.parse(fDate), ownerId, ownername);
-        Map<Long, Course> allCourses = courseServ.retrieveAll().stream()
-                .collect(Collectors.toMap(Course::getId, a -> a));
-        Map<Long, Teacher> allTeachers = teacherServ.retrieveAll().stream()
-                .collect(Collectors.toMap(Teacher::getId, a -> a));
-        Map<Long, Group> allGroups = groupServ.retrieveAll().stream().collect(Collectors.toMap(Group::getId, a -> a));
-        Map<Long, Room> allRoom = roomServ.retrieveAll().stream().collect(Collectors.toMap(Room::getId, a -> a));
+        Map<Long, CourseDto> allCourses = courseServ.retrieveAll().stream().map(mapperUtil::toDto)
+                .collect(Collectors.toMap(CourseDto::getId, a -> a));
+        Map<Long, TeacherDto> allTeachers = teacherServ.retrieveAll().stream().map(mapperUtil::toDto)
+                .collect(Collectors.toMap(TeacherDto::getId, a -> a));
+        Map<Long, GroupDto> allGroups = groupServ.retrieveAll().stream().map(mapperUtil::toDto)
+                .collect(Collectors.toMap(GroupDto::getId, a -> a));
+        Map<Long, RoomDto> allRoom = roomServ.retrieveAll().stream().map(mapperUtil::toDto)
+                .collect(Collectors.toMap(RoomDto::getId, a -> a));
 
-        allCourses.put(null, new Course());
-        allTeachers.put(null, new Teacher());
-        allGroups.put(null, new Group());
-        allRoom.put(null, new Room());
+        allCourses.put(null, new CourseDto());
+        allTeachers.put(null, new TeacherDto());
+        allGroups.put(null, new GroupDto());
+        allRoom.put(null, new RoomDto());
 
         model.addAttribute("page", page);
         model.addAttribute("showcase", showcase);
@@ -168,7 +162,7 @@ public class LecturesController {
             @RequestParam(value = START_DATE, required = false) String sDate,
             @RequestParam(value = FINISH_DATE, required = false) String fDate) {
 
-        model.addAttribute(LECTURE, lectureServ.retrieveLectureById(lectureId));
+        model.addAttribute(LECTURE, mapperUtil.toDto(lectureServ.retrieveLectureById(lectureId)));
         model.addAttribute("substitute", substitute);
 
         model.addAttribute(LECTURE_ID, lectureId);
@@ -214,42 +208,42 @@ public class LecturesController {
             @RequestParam(value = ROOM_ID, required = false) Long roomId,
             @RequestParam(value = COURSE_ID, required = false) Long courseId,
             @RequestParam(value = GROUP_ID, required = false) Long groupId) throws Throwable {
-        Lecture interimLecture = new Lecture(lectureId, serialNumberPerDay, LocalDate.parse(cDate), roomId, teacherId,
-                courseId, groupId);
+        LectureDto interimLecture = LectureDto.builder().id(lectureId).serialNumberPerDay(serialNumberPerDay)
+                .date(LocalDate.parse(cDate)).roomId(ownername != null && ownername.equals(ROOM) ? ownerId : roomId)
+                .teacherId(ownername != null && ownername.equals(TEACHER) ? ownerId : teacherId)
+                .courseId(ownername != null && ownername.equals(COURSE) ? ownerId : courseId)
+                .groupId(ownername != null && ownername.equals(GROUP) ? ownerId : groupId).build();
 
         if (ownername == null) {
-            throw new SomethingWrongHappensException(SOMETHING_WRONG + OWNERNAME + "is empty");
+            throw new UniversityException("undefined");
         }
         List<String> sequenceSteps = fillSequenceSetps(ownername);
         substitute = sequenceSteps.get(sequenceSteps.indexOf(substitute) + 1);
 
         if (ownername.equals(GROUP)) {
-            model.addAttribute(SELECTION,
-                    getPartsLectureOfGroup(sequenceSteps.indexOf(substitute), interimLecture).orElseThrow(
-                            () -> new SomethingWrongHappensException(SOMETHING_WRONG + OWNERNAME + " - " + ownername)));
+            model.addAttribute(SELECTION, getPartsLectureOfGroup(sequenceSteps.indexOf(substitute), interimLecture)
+                    .orElseThrow(() -> new UniversityException(ownername)));
         }
 
         if (ownername.equals(TEACHER)) {
-            model.addAttribute(SELECTION,
-                    getPartsLectureOfTeacher(sequenceSteps.indexOf(substitute), interimLecture).orElseThrow(
-                            () -> new SomethingWrongHappensException(SOMETHING_WRONG + OWNERNAME + " - " + ownername)));
+            model.addAttribute(SELECTION, getPartsLectureOfTeacher(sequenceSteps.indexOf(substitute), interimLecture)
+                    .orElseThrow(() -> new UniversityException(ownername)));
         }
 
         if (ownername.equals(ROOM)) {
-            model.addAttribute(SELECTION,
-                    getPartsLectureOfRoom(sequenceSteps.indexOf(substitute), interimLecture).orElseThrow(
-                            () -> new SomethingWrongHappensException(SOMETHING_WRONG + OWNERNAME + " - " + ownername)));
+            model.addAttribute(SELECTION, getPartsLectureOfRoom(sequenceSteps.indexOf(substitute), interimLecture)
+                    .orElseThrow(() -> new UniversityException(ownername)));
         }
 
         model.addAttribute(LECTURE, interimLecture);
         model.addAttribute("substitute", substitute);
         model.addAttribute(NUMBER_OF_DAY, serialNumberPerDay);
         model.addAttribute("date", LocalDate.parse(cDate));
-        model.addAttribute(TEACHER_ID, teacherId);
+        model.addAttribute(TEACHER_ID, ownername.equals(TEACHER) ? ownerId : teacherId);
         model.addAttribute(LECTURE_ID, lectureId);
-        model.addAttribute(ROOM_ID, roomId);
-        model.addAttribute(COURSE_ID, courseId);
-        model.addAttribute(GROUP_ID, groupId);
+        model.addAttribute(ROOM_ID, ownername.equals(ROOM) ? ownerId : roomId);
+        model.addAttribute(COURSE_ID, ownername.equals(COURSE) ? ownerId : courseId);
+        model.addAttribute(GROUP_ID, ownername.equals(GROUP) ? ownerId : groupId);
         model.addAttribute(OWNERNAME, ownername);
         model.addAttribute(OWNER_ID, ownerId);
         model.addAttribute(START_DATE, LocalDate.parse(sDate));
@@ -263,7 +257,7 @@ public class LecturesController {
     }
 
     @SuppressWarnings("rawtypes")
-    public Optional getPartsLectureOfGroup(int stepOfsequence, Lecture interim) {
+    public Optional getPartsLectureOfGroup(int stepOfsequence, LectureDto interim) {
         Optional result = java.util.Optional.empty();
 
         if (stepOfsequence == 1) {
@@ -279,7 +273,7 @@ public class LecturesController {
     }
 
     @SuppressWarnings("rawtypes")
-    public Optional getPartsLectureOfTeacher(int stepOfsequence, Lecture interim) {
+    public Optional getPartsLectureOfTeacher(int stepOfsequence, LectureDto interim) {
         Optional result = java.util.Optional.empty();
 
         if (stepOfsequence == 1) {
@@ -295,7 +289,7 @@ public class LecturesController {
     }
 
     @SuppressWarnings("rawtypes")
-    public Optional getPartsLectureOfRoom(int stepOfsequence, Lecture interim) {
+    public Optional getPartsLectureOfRoom(int stepOfsequence, LectureDto interim) {
         Optional result = java.util.Optional.empty();
 
         if (stepOfsequence == 1) {
@@ -324,14 +318,14 @@ public class LecturesController {
     }
 
     @PatchMapping()
-    public String reloadLecture(@ModelAttribute(LECTURE) Lecture lecture, @RequestParam(OWNERNAME) String ownername,
-            @RequestParam(OWNER_ID) Long ownerId, @RequestParam(START_DATE) String sDate,
-            @RequestParam(FINISH_DATE) String fDate) {
-
+    public String reloadLecture(@ModelAttribute(LECTURE) LectureDto lectureDto,
+            @RequestParam(OWNERNAME) String ownername, @RequestParam(OWNER_ID) Long ownerId,
+            @RequestParam(START_DATE) String sDate, @RequestParam(FINISH_DATE) String fDate) {
         return UriComponentsBuilder.newInstance().scheme(REDIRECT)
                 .pathSegment(LECTURES, ownername, ownerId.toString(), "day").queryParam(START_DATE, sDate)
                 .queryParam(FINISH_DATE, fDate)
-                .queryParam("page", adapter.getPage(sDate, lectureServ.enter(lecture).getDate()))
+                .queryParam("page",
+                        adapter.getPage(sDate, lectureServ.enter(mapperUtil.toEntity(lectureDto)).getDate()))
                 .queryParam("mode", "creater").build().toString();
     }
 
@@ -367,16 +361,17 @@ public class LecturesController {
                 .collect(Collectors.toMap(Teacher::getId, a -> a));
         Map<Long, Group> allGroups = groupServ.retrieveAll().stream().collect(Collectors.toMap(Group::getId, a -> a));
         Map<Long, Room> allRoom = roomServ.retrieveAll().stream().collect(Collectors.toMap(Room::getId, a -> a));
+        LectureDto interimLecture = LectureDto.builder().id(lectureId).serialNumberPerDay(serialNumberPerDay)
+                .date(LocalDate.parse(cDate)).roomId(roomId).teacherId(teacherId).courseId(courseId).groupId(groupId)
+                .build();
 
         model.addAttribute(FINISH_DATE, LocalDate.parse(fDate));
         model.addAttribute(START_DATE, LocalDate.parse(sDate));
         model.addAttribute("timeline", adapter.stretchMonthTimeline(LocalDate.parse(sDate), LocalDate.parse(fDate)));
         model.addAttribute("page", page != null ? page : START_POINT_OF_PAGINATION);
         model.addAttribute("sourcename", ownername != null ? ownername : sourcename);
-        model.addAttribute("sourceId", ownerId != null ? ownerId : sourceId);
         model.addAttribute(OWNERNAME, LECTURE);
-        model.addAttribute("owner", new Lecture(lectureId, serialNumberPerDay, LocalDate.parse(cDate), roomId,
-                teacherId, courseId, groupId));
+        model.addAttribute("owner", interimLecture);
         model.addAttribute("mode", "selector");
         model.addAttribute(MAP_OF_COURSE, allCourses);
         model.addAttribute(MAP_OF_TEACHER, allTeachers);
@@ -384,7 +379,7 @@ public class LecturesController {
         model.addAttribute(MAP_OF_GROUP, allGroups);
         model.addAttribute(TIMETABLE,
                 adapter.getTimetable(groupId, teacherId, roomId, LocalDate.parse(sDate), LocalDate.parse(fDate)));
-        model.addAttribute(LECTURE, new Lecture());
+        model.addAttribute(LECTURE, new LectureDto());
 
         return "lectures/stringLectures";
     }
@@ -398,11 +393,12 @@ public class LecturesController {
             @RequestParam(value = "markMoveOwner", required = false) Long oldId) {
 
         for (int i = 0; i < timeSpots.length; i++) {
-            lectureServ.enter(
-                    new Lecture(i == 0 && oldId != null ? oldId : null, Integer.parseInt(timeSpots[i].split(" ")[0]),
-                            LocalDate.parse(timeSpots[i].split(" ")[1]), roomId, teacherId, courseId, groupId));
+            lectureServ.enter(mapperUtil.toEntity(LectureDto.builder().id(i == 0 && oldId != null ? oldId : null)
+                    .serialNumberPerDay(Integer.parseInt(timeSpots[i].split(" ")[0]))
+                    .date(LocalDate.parse(timeSpots[i].split(" ")[1])).roomId(roomId).teacherId(teacherId)
+                    .courseId(courseId).groupId(groupId).build()));
         }
-        SortedMap<LocalDate, ArrayList<Lecture>> timetablePerDay = adapter
+        SortedMap<LocalDate, ArrayList<LectureDto>> timetablePerDay = adapter
                 .stuffTimetableByOwnername(LocalDate.parse(sDate), LocalDate.parse(fDate), sourceId, sourcename);
         Map<Long, Course> allCourses = courseServ.retrieveAll().stream()
                 .collect(Collectors.toMap(Course::getId, a -> a));

@@ -1,26 +1,19 @@
 package ua.com.foxminded.asharov.universityschedule.dao.util;
 
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.NUMBER_OF_LECTURE_PER_DAY;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.LECTURE_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.DATE_OF_LECTURE;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.ROOM_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.COURSE_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.GROUP_ID;
-import static ua.com.foxminded.asharov.universityschedule.model.Lecture.TEACHER_ID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ua.com.foxminded.asharov.universityschedule.model.Lecture;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ua.com.foxminded.asharov.universityschedule.model.Lecture;
+import static ua.com.foxminded.asharov.universityschedule.model.Lecture.*;
 
 public class LectureDaoUtil implements DaoUtil<Lecture> {
     private static final Logger logger = LoggerFactory.getLogger(LectureDaoUtil.class);
-    
+
     @Override
     public Lecture mapRow(ResultSet rs, int rowNum) throws SQLException {
         Lecture lecture = new Lecture();

@@ -2,7 +2,7 @@ package ua.com.foxminded.asharov.universityschedule.service;
 
 import org.springframework.transaction.annotation.Transactional;
 
-import ua.com.foxminded.asharov.universityschedule.model.Course;
+import ua.com.foxminded.asharov.universityschedule.entity.Course;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,7 +13,7 @@ public interface CourseService {
 
     @Transactional(readOnly = true)
     List<Course> retrieveByGroupId(Long groupId);
-    
+
     @Transactional(readOnly = true)
     Course retrieveById(Long courseId);
 
@@ -34,8 +34,9 @@ public interface CourseService {
 
     @Transactional(readOnly = true)
     List<Course> retrieveFreeByGroupWithFreeTeachersByTime(Long groupId, LocalDate currentDate, int serialNumberPerDay);
-    
+
     @Transactional(readOnly = true)
-    List<Course> retrieveFreeByTeacherWithFreeGroupsByTime(Long techerId, LocalDate currentDate, int serialNumberPerDay);
+    List<Course> retrieveFreeByTeacherWithFreeGroupsByTime(Long techerId, LocalDate currentDate,
+            int serialNumberPerDay);
 
 }
