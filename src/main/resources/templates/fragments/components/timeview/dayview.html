@@ -1,0 +1,41 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="dayview (dayEntry, ownername, owner, interest, mode, groupsMap, coursesMap, teachersMap, roomsMap)">
+
+    <div class="contaner bg-info">
+        <div class="row">
+            <div class="col text-left">
+                <span th:text="${dayEntry.get(0).getDate()}">Date</span>
+                </br>
+                <span th:text="${#temporals.dayOfWeekNameShort(dayEntry.get(0).getDate())}">DayOfWeek</span>
+            </div>
+        </div>
+        <div class="row" th:if="${#strings.isEmpty(interest)}">
+            <div class="col-sm">time</div>
+            <div class="col-sm" th:unless="${ownername=='course'}">course</div>
+            <div class="col-sm" th:unless="${ownername=='teacher'}">teacher</div>
+            <div class="col-sm" th:unless="${ownername=='group'}">group</div>
+            <div class="col-sm" th:unless="${ownername=='room'}">room</div>
+        </div>
+
+        <div class="row-sm" th:each="lecture:${dayEntry}">
+            <div class="col bg-primary border border-light" th:unless="${lecture.getDate()==null}">
+                <div th:switch="${mode}">
+                    <span th:case="'creater'"
+                          th:insert="fragments/components/lecture/editview.html :: editview(ownername=${ownername},owner=${owner},lecture=${lecture}, interest=${interest}, group=${groupsMap.get(lecture.getGroupId())}, course=${coursesMap.get(lecture.getCourseId())}, teacher=${teachersMap.get(lecture.getTeacherId())}, room=${roomsMap.get(lecture.getRoomId())})">lecture</span>
+                    <span th:case="'viewer'"
+                          th:insert="fragments/components/lecture/shortview.html :: shortview(ownername=${ownername},lecture=${lecture}, interest=${interest}, group=${groupsMap.get(lecture.getGroupId())}, course=${coursesMap.get(lecture.getCourseId())}, teacher=${teachersMap.get(lecture.getTeacherId())}, room=${roomsMap.get(lecture.getRoomId())})">lecture</span>
+                    <span th:case=*
+                          th:text="'hello from timeview-dayview check mode parameter, it is mode='+${mode}"></span>
+                </div>
+                <div class="col bg-light border border-primary" th:if="${lecture.getDate()==null}">
+                    <span class="text-left" th:text="${lecture.getSerialNumberPerDay()}">lecture</span>
+                </div>
+            </div>
+        </div>
+
+    </div>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="shortview(ownername,lecture,interest,group,course,teacher,room)">
+
+    <div th:with="items = ${ {group,course,teacher,room} }">
+        <div th:with="itemnames = ${ {'group','course','teacher','room'} }">
+
+            <div class="row" th:if="${#strings.isEmpty(interest) or interest == 'timeAndDay'}">
+                <div class="col-sm-2" th:unless="${interest == 'timeAndDay'}"
+                     th:text="${lecture.getSerialNumberPerDay()}">number
+                </div>
+                <div class="col-md-auto" th:each="itemname,iStat:${itemnames}" th:unless="${ownername==itemname}">
+                    <span th:insert="'fragments/components/'+${itemname}+'/shortview.html' :: shortview (${items[iStat.index]})">item</span>
+                </div>
+            </div>
+
+            <div class="row" th:unless="${#strings.isEmpty(interest) and interest != 'timeAndDay'}">
+                <div class="col-sm-2" th:text="${lecture.getSerialNumberPerDay()}">number</div>
+                <div class="col-md-auto" th:each="itemname,iStat:${itemnames}" th:if="${interest==itemname}">
+                    <span th:insert="'fragments/components/'+${itemname}+'/shortview.html' :: shortview (${items[iStat.index]})">item</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

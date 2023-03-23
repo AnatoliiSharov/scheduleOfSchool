@@ -1,0 +1,32 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>teacher's largeview</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+
+    <div th:fragment="largeview(teacher, courses, twoassets)">
+        <legend>Teacher:</legend>
+        <p th:text="'First Name: '+${teacher.getFirstName()}">First Name
+        <p/>
+        <p th:text="'Last Name: '+${teacher.getLastName()}">Last Name
+
+        <p/>
+        <div th:each="course:${courses}">
+            <a
+                    th:href="@{/courses/{id}(id=${course.getId()})}"
+                    th:text="${course.getName()}">course</a>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

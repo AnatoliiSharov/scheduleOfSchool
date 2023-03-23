@@ -1,0 +1,27 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="inputview(group,assets)">
+
+    <form th:method="post"
+          th:action="@{/groups}"
+          th:object=${owner}>
+        <div class="input-group mb-1">
+            <span class="input-group-text" id="input-name-group">Enter name:</span>
+            <input type=text th:field="*{name}" th:id="name"
+                   th:value="${group.getName()}" class="form-control"
+                   placeholder="name" aria-label="input-name-group"
+                   aria-describedby="input-name-group">
+            <div class="alert alert-warning" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+        <div class="input-group mb-1">
+            <input type="hidden" th:field="*{id}"
+                   th:value="${group.getId()}"> <input type="submit"
+                                                       value="Enter" class="form-control">
+        </div>
+    </form>
+</div>
+

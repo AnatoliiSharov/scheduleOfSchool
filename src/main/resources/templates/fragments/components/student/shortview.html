@@ -1,0 +1,31 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>student's shortview</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+
+    <div th:fragment="shortview (student)">
+
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="inputPassword6" class="col-form-label">
+                    <th th:text="${student.getFirstName()}">name</th>
+                    <th th:text="${student.getLastName()}">surname</th>
+                </label>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

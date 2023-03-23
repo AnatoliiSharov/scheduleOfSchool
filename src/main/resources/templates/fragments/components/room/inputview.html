@@ -1,0 +1,34 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="inputview(room, assets)">
+    <form th:method="post"
+          th:action="@{/rooms}"
+          th:object=${owner}>
+        <div class="input-group mb-1">
+        <span class="input-group-text" id="input-address-room">Enter
+          address:</span> <input type=text th:field="*{address}" th:id="address"
+                                 th:volue="${room.getAddress()}" class="form-control"
+                                 placeholder="address" aria-label="input-address-room"
+                                 aria-describedby="input-name-room">
+            <div class="alert alert-warning" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+        </div>
+        <div class="input-group mb-1">
+        <span class="input-group-text" id="input-capacity-teacher">Enter
+          capacity:</span> <input type=text th:field="*{capacity}"
+                                  th:id="capacity" th:volue="${room.getCapacity()}"
+                                  class="form-control" placeholder="capacity"
+                                  aria-label="input-capacity-room"
+                                  aria-describedby="input-capacity-room">
+            <div class="alert alert-warning" th:if="${#fields.hasErrors('capacity')}" th:errors="*{capacity}"></div>
+        </div>
+        <div class="input-group mb-1">
+            <input type="hidden" th:field="*{id}"
+                   th:volue="${room.getId()}"> <input type="submit"
+                                                      value="Enter" class="form-control">
+        </div>
+    </form>
+</div>

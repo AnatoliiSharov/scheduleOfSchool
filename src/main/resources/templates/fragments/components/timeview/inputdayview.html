@@ -1,0 +1,56 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>Schedule</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container"></div>
+
+<div th:fragment="dayview (dayTimetable, ownername, interest)">
+    <table>
+        <caption>show day with brigs of lecture without column of ownername</caption>
+        <thead>
+        <tr th:if="${interest==null}">
+            <th scope="colAppiadAlways">N</th>
+            <th scope="colHideOneOfRest" th:unless="${ownername=='course'}">course</th>
+            <th scope="colHideOneOfRest" th:unless="${ownername=='teacher'}">teacher</th>
+            <th scope="colHideOneOfRest" th:unless="${ownername=='group'}">group</th>
+            <th scope="colHideOneOfRest" th:unless="${ownername=='room'}">room</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <th scope="row" th:text="${dayTimetable.getKey()}">Date</th>
+        </tr>
+        <div th:each="lecture:${dayTimetable.getValue()}">
+            <div th:unless="${lecture.getDate()==null}">
+                <tr>
+                    <div
+                            th:insert="fragments/components/lecture/largeview.html :: largeview(ownername=${ownername},lecture=${lecture}, interest='course')">
+                        lecture
+                    </div>
+                </tr>
+            </div>
+            <div th:if="${lecture.getDate()==null}">
+                <tr>
+                    <th scope="row" th:text="${lecture.getSerialNumberPerDay()}">i</th>
+                    <th scope="row">your advertising message can be here</th>
+                </tr>
+            </div>
+        </div>
+        </tbody>
+    </table>
+</div>
+</div>
+</body>
+</html>
+
+</body>
+</html>

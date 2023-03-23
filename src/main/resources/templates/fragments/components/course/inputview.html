@@ -1,0 +1,57 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>course's inputview</title>
+    <style>
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+
+    <div th:fragment="inputview(course,assets)">
+
+        <form th:method="post"
+              th:action="@{/courses}"
+              th:object=${owner}>
+            <div class="input-group mb-1">
+                <span class="input-group-text" id="input-name-course">Enter name:</span>
+                <input type=text th:field="*{name}" th:id="name"
+                       th:value="${course.getName()}" class="form-control"
+                       placeholder="name" aria-label="input-name-course"
+                       aria-describedby="input-name-course">
+                <div class="alert alert-warning" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+            <br/>
+            </div>
+            <div class="input-group mb-1">
+                <span class="input-group-text" id="input-surname-course">Enter description:</span>
+                <input type=text th:field="*{description}"
+                       th:id="description" th:value="${course.getDescription()}"
+                       class="form-control" placeholder="description"
+                       aria-label="input-surname-course"
+                       aria-describedby="input-surname-course">
+                <div class="alert alert-warning" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+            </div>
+            <div class="input-group mb-1">
+                <input type="hidden" th:field="*{id}"
+                       th:volue="${course.getId()}">
+                <input type="submit"
+                       value="Enter" class="form-control">
+            </div>
+        </form>
+    </div>
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,86 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="selectdayview">
+
+    <div th:with="monthStart=${#temporals.dayOfWeek(timelineThisMonth.get(0))}">
+        <div th:with="monthEnd=${timelineThisMonth.size()+monthStart}">
+
+            <div th:each="weekOfMonth:${#numbers.sequence(0,5)}">
+                <div class="row">
+                    <div class="col" th:each="dayOfWeek:${#numbers.sequence(1,7)}">
+                        <div th:with="dayOfVeiw=${dayOfWeek}+7*${weekOfMonth}">
+
+                            <div th:if="${dayOfVeiw>=monthStart and monthEnd>=dayOfVeiw}">
+                                <div th:with="currentDay=${timelineThisMonth.get(dayOfVeiw-monthStart)}">
+                                    <div th:with="day=${timetablePerDay.get(currentDay)}">
+                                        <form th:action="@{/lectures/{ownername}/{id}/{timeview}(ownername=${ownername},id=${id},timeview='day')}">
+                                            <input type="hidden" th:name="startDate" th:value="${startDate}">
+                                            <input type="hidden" th:name="finishDate" th:value="${finishDate}">
+                                            <input type="hidden" th:name="currentDay" th:value="${currentDay}">
+                                            <input type="hidden" th:name="mode" th:value="${mode}">
+
+                                            <div class="contaner bg-info">
+                                                <div class="row">
+                                                    <div class="col text-left">
+                                                        <span th:text="${currentDay}">Date</span>
+                                                        </br>
+                                                        <span th:text="${#temporals.dayOfWeekNameShort(currentDay)}">DayOfWeek</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm">time</div>
+                                                    <div class="col-sm">spot</div>
+                                                </div>
+                                                <div class="row-sm" th:unless="${day==null}">
+                                                    <div th:each="lectureEntry:${day.entrySet()}">
+                                                        <div class="row"
+                                                             th:unless="${lectureEntry.getValue().get(0).getGroupId()==null}">
+                                                            <div class="col-sm-1 bg-primary border border-light">
+                                                                <span th:text="${lectureEntry.getKey()}">timeOfSpot</span>
+                                                            </div>
+                                                            <div class="col-sm-9 bg-primary border border-light">
+                                                                <span th:text="'it is taken'">contentsOfSpot</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row"
+                                                             th:if="${lectureEntry.getValue().get(0).getGroupId()==null}">
+                                                            <div class="col-sm-1 bg-white border border-light">
+                                                                <span th:text="${lectureEntry.getKey()}">timeOfSpot</span>
+                                                            </div>
+                                                            <div class="col-sm-9 bg-white border border-light">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                       id="checkboxSelectoOfSpotOfLecture"
+                                                                       aria-label="newLectureTimeSpot">
+                                                                <input type="hidden" th:name="newLectureTimeSpot"
+                                                                       th:value="${lectureEntry.getKey()} +' '+ ${currentDay}">
+                                                                <label class="form-check-label"
+                                                                       for="checkboxSelectoOfSpotOfLecture">eat
+                                                                    me</label><br>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col bg-light border border-primary" th:if="${day==null}">
+                                                    <span class="text-left"
+                                                          th:text="'beyond a given time'">lecture</span>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+</div>

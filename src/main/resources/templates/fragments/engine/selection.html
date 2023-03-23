@@ -1,0 +1,29 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+
+<div th:fragment="itemselection(itemname,items)">
+
+    <form th:action="@{{ownername}s/new(ownername=${itemname})}" method="get">
+        <div class="d-grid gap-2">
+            <button class="btn btn-outline-secondary" type="submit" id="newbie" th:text="'New '+${itemname}">New item
+            </button>
+        </div>
+    </form>
+    <div th:text="'Select '+${itemname}">an invitation to choice of an item</div>
+
+    <div th:each="item:${items}">
+        <form th:action="@{{ownername}s/{id}(id=${item.getId()},ownername=${itemname})}" method="get">
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-secondary" type="submit" id="selection">
+                    <div th:replace="'fragments/components/'+${itemname}+'/shortview.html' :: shortview (${item})"></div>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

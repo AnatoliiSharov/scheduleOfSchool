@@ -1,0 +1,15 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="shortview (group)">
+    <div class="row g-3 align-items-center">
+        <div class="col-auto">
+            <label for="inputPassword6" class="col-form-label">
+                <th th:text="${group.getName()}">name</th>
+            </label>
+        </div>
+    </div>
+</div>

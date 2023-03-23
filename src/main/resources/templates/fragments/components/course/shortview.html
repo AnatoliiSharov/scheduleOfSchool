@@ -1,0 +1,9 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="shortview (course)">
+    <span th:text="${#strings.isEmpty(course.getName())?_:course.getName().split(' ')[0]}">name</span>
+</div>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>student's inputview</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+
+    <div th:fragment="inputview(student, groups)">
+        <form th:method="post"
+              th:action="@{/students}"
+              th:object=${owner}>
+            <div class="input-group mb-1">
+        <span class="input-group-text" id="input-name-student">Enter
+          name:</span> <input type=text th:field="*{firstName}" th:id="name"
+                              th:value="${student.getFirstName()}" class="form-control"
+                              placeholder="name" aria-label="input-name-student"
+                              aria-describedby="input-name-student">
+                <div class="alert alert-warning" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>                  
+            </div>
+            <div class="input-group mb-1">
+        <span class="input-group-text" id="input-surname-student">Enter
+          surname:</span> <input type=text th:field="*{lastName}"
+                                 th:id="surname" th:value="${student.getLastName()}"
+                                 class="form-control" placeholder="surname"
+                                 aria-label="input-surname-student"
+                                 aria-describedby="input-surname-student">
+                <div class="alert alert-warning" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupForStudent">Group</label>
+                <select class="form-select" id="inputGroupForStudent" th:field="*{groupId}">
+                    <option selected th:text="${ownedassets!=null ? ownedassets.getName() : 'Choose...'}"
+                            th:value="${ownedassets!=null ? ownedassets.getId() : _}">Choose...
+                    </option>
+                    <option th:each="asset:${assets}" th:text="${asset.getName()}" th:value="${asset.getId()}">One
+                    </option>
+                </select>
+                <div class="alert alert-warning" th:if="${#fields.hasErrors('groupId')}" th:errors="*{groupId}"></div>
+            </div>
+
+            <div class="input-group mb-1">
+                <input type="hidden" th:field="*{id}"
+                       th:value="${student.getId()}"> <input type="submit"
+                                                             value="Enter" class="form-control">
+            </div>
+
+        </form>
+    </div>
+
+</div>
+</body>
+</html>

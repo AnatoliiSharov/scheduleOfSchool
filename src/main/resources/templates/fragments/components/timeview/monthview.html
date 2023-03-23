@@ -1,0 +1,46 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="monthview(startDate, finishDate, monthMap, ownername, owner, interest, mode, groupsMap, coursesMap, teachersMap, roomsMap)">
+
+    <div th:with="monthStart=${#temporals.dayOfWeek(monthMap.entrySet()[0].getKey())}">
+        <div th:with="monthEnd=${monthMap.size()+monthStart}">
+
+            <div th:each="weekOfMonth:${#numbers.sequence(0,5)}">
+                <div class="row">
+                    <div class="col" th:each="dayOfWeek:${#numbers.sequence(1,7)}"
+                         th:with="dayOfVeiw=${dayOfWeek}+7*${weekOfMonth}">
+                        <div th:if="${dayOfVeiw>=monthStart and monthEnd>dayOfVeiw}">
+                            <div th:with="currentDay=${monthMap.entrySet()[dayOfVeiw-monthStart].getKey()}">
+                                <form th:action="@{/lectures/{ownername}/{id}/{timeview}(ownername=${ownername},id=${id},timeview='day')}">
+                                    <input type="hidden" th:name="startDate" th:value="${startDate}">
+                                    <input type="hidden" th:name="finishDate" th:value="${finishDate}">
+                                    <input type="hidden" th:name="currentDay" th:value="${currentDay}">
+                                    <input type="hidden" th:name="mode" th:value="${mode}">
+
+                                    <div th:if="${currentDay.isBefore(timetablePerDay.firstKey()) or currentDay.isAfter(timetablePerDay.lastKey())}">
+                                        <button type="submit" class="btn btn-primary" disabled>
+                                            <div th:replace="fragments/components/timeview/dayview.html :: dayview (dayEntry=${monthMap.entrySet()[dayOfVeiw-monthStart].getValue()},ownername=${ownername},owner=${owner},interest=${showcase}, mode=${mode}, groupsMap=${groupsMap}, coursesMap=${coursesMap}, teachersMap=${teachersMap}, roomsMap=${roomsMap})"></div>
+                                        </button>
+                                    </div>
+
+                                    <div th:unless="${currentDay.isBefore(timetablePerDay.firstKey()) or currentDay.isAfter(timetablePerDay.lastKey())}">
+                                        <button type="submit" class="btn btn-primary">
+                                            <div th:replace="fragments/components/timeview/dayview.html :: dayview (dayEntry=${monthMap.entrySet()[dayOfVeiw-monthStart].getValue()},ownername=${ownername},owner=${owner},interest=${showcase}, mode=${mode}, groupsMap=${groupsMap}, coursesMap=${coursesMap}, teachersMap=${teachersMap}, roomsMap=${roomsMap})"></div>
+                                        </button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>

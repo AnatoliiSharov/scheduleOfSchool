@@ -1,0 +1,22 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="dashboard(ownername, owner, assets, twoassets)">
+    <div th:insert="'fragments/components/'+${ownername}+'/largeview.html' :: largeview(${owner},${assets},${twoassets})"></div>
+    <br>
+    <form th:unless="${ownername == 'course'}"
+          th:action="@{/lectures/{ownername}/{id}/timetable(id=${owner.getId()}, ownername=${ownername})}" method="get">
+        <input type="submit" th:value="timetable">
+    </form>
+    <br>
+    <form th:method="DELETE" th:action="@{/{ownername}s/{id}(ownername=${ownername},id=${owner.getId()})}">
+        <input type="submit" value="delete">
+    </form>
+    <br>
+    <form action=# th:action="@{{id}/modify(id=${owner.getId()})}" method="get">
+        <input type="submit" value="modify">
+    </form>
+</div>

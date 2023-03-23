@@ -1,0 +1,57 @@
+<!doctype html>
+<html
+xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5"
+        lang="en">
+
+<div th:fragment="navbar">
+    <nav class="navbar navbar-expand-lg bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Navbar</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">Home</a>
+                    </li>
+                    
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            Menu
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/teachers">Teachers</a></li>
+                            <li><a class="dropdown-item" href="/groups">Groups</a></li>
+                            <li><a class="dropdown-item" href="/rooms">Rooms</a></li>
+                            <li><a class="dropdown-item" href="/students">Students</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/courses">Courses</a></li>
+                        </ul>
+                    </li>
+                    
+                </ul>
+                
+                <div sec:authorize="isAuthenticated()">
+                Authenticated as <span sec:authentication="name"></span>
+                </div>
+                <div sec:authorize="isAnonymous()">
+                <form th:action="@{/logout}" method="post">
+                    <input class="btn btn-outline-success" type="submit" th:href="@{/login}"/>
+                </form>
+                </div>
+                
+                <div sec:authorize="isAuthenticated()">
+                <form th:action="@{/logout}" method="post">
+                    <input class="btn btn-outline-success" type="submit" value="Sign Out"/>
+                </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+</div>

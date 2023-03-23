@@ -1,0 +1,31 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>Schedule</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+
+    <div
+            th:fragment="modification(ownername,owner,assetname,assets,ownedassets)">
+        <div class="row">
+            <div class="col-4">
+                <div
+                        th:insert="'fragments/components/'+${ownername}+'/inputview.html' :: inputview(${owner}, ${assets})"></div>
+            </div>
+            <div class="col-8">
+                <div th:unless="${assetname=='group'}"
+                     th:insert="fragments/engine/linklistedit.html :: addAndRemoveFewAssetsInOwner(${ownername},${owner},${assetname},${assets},${ownedassets})"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

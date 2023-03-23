@@ -1,0 +1,25 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title th:text="'Selection of '+${ownername}">Selection of owner</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+    <div class="container text-center">
+        <div class="row">
+            <div class="col">
+                <div
+                        th:insert="fragments/engine/selection.html :: itemselection(${ownername}, ${owners})"></div>
+            </div>
+            <div class="col"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

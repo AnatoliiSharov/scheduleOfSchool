@@ -1,0 +1,13 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="shortview (teacher)">
+
+    <div class="col-auto">
+        <span th:text="${#strings.isEmpty(teacher.getFirstName())?_:teacher.getFirstName().split('')[0]+'.'+teacher.getLastName()}">name</span>
+    </div>
+
+</div>

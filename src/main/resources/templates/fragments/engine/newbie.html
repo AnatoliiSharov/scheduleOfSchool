@@ -1,0 +1,25 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>Schedule</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container">
+
+    <div th:fragment="newbie(ownername, owner, assetname, assets)">
+
+        <div th:insert="'fragments/components/'+${ownername}+'/inputview.html' :: inputview(${owner}, ${assets})"></div>
+        <br/>
+        <p> if it needs you can add linked elements in the menu of change after entering the details of a newbie</p>
+    </div>
+
+</div>
+</body>
+</html>

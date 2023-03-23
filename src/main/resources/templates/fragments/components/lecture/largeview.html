@@ -1,0 +1,34 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="largeview(Lecture, group, course, teacher, room)">
+    <div th:with="items = ${ {group,course,teacher,room} }">
+        <div th:with="itemnames = ${ {'group','course','teacher','room'} }">
+
+            <legend>Lecture:</legend>
+            <div class="row">
+                <div class="col">
+                    <span th:text="'Date/time of Lecture(is being changed)'">date</span>
+                </div>
+                <div class="col">
+                    <span th:text="${lecture.getDate()+' at '+lecture.getSerialNumberPerDay()">date</span>
+                </div>
+            </div>
+
+            <div th:each="itemname,iStat:${itemnames}">
+                <div class="row">
+                    <div class="col">
+                        <span th:text="${itemname}">itemname</span>
+                    </div>
+                    <div class="col">
+                        <span th:replace="'fragments/components/'+${itemname}+'/shortview.html' :: shortview (${items[iStat.index]})">item</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

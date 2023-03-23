@@ -1,0 +1,35 @@
+spring:
+    datasource:
+        driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://localhost:5432/university
+        username: postgres
+        password: 1234
+
+    main:
+     allow-bean-definition-overriding: true
+            
+    flyway:
+        schema: schema
+        baselineOnMigrate: true
+        validateOnMigrate: false
+
+    mvc:
+        hiddenmethod:
+            filter:
+                enabled: true
+
+    jpa:
+        database-platform: org.hibernate.dialect.PostgreSQLDialect
+        generate-ddl: true
+        show-sql: true
+        hibernate:
+            ddl-auto: none
+        properties:
+            hibernate:
+                temp:
+                    use_jdbc_metadata_defaults: false
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG

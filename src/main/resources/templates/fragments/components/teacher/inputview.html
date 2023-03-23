@@ -1,0 +1,35 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="inputview(teacher, assets)">
+    <form th:method="post"
+          th:action="@{/teachers}"
+          th:object=${owner}>
+        <div class="input-group mb-1">
+
+            <span class="input-group-text" id="input-name-teacher">Enter name:</span>
+            <input type=text th:field="*{firstName}" th:id="name" th:value="${teacher.getFirstName()}"
+                   class="form-control"
+                   placeholder="name" aria-label="input-name-teacher"
+                   aria-describedby="input-name-teacher">
+            <div class="alert alert-warning" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+        </div>
+        <div class="input-group mb-1">
+        <span class="input-group-text" id="input-surname-teacher">Enter
+          surname:</span> <input type=text th:field="*{lastName}"
+                                 th:id="surname" th:value="${teacher.getLastName()}"
+                                 class="form-control" placeholder="surname"
+                                 aria-label="input-surname-teacher"
+                                 aria-describedby="input-surname-teacher">
+            <div class="alert alert-warning" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>                         
+        </div>
+        <div class="input-group mb-1">
+            <input type="hidden" th:field="*{id}"
+                   th:value="${teacher.getId()}"> <input type="submit"
+                                                         value="Enter" class="form-control">
+        </div>
+    </form>
+</div>

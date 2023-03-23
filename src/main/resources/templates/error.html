@@ -1,0 +1,31 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+<title>Ooops!</title>
+</head>
+<body>
+  <div th:insert="fragments/general.html :: script-src"></div>
+  <div th:insert="fragments/components/navbar.html :: navbar"></div>
+  <div class="container"></div>
+
+
+  <div class="row">
+    <div class="col"></div>
+    <div class="col">
+      <div
+        th:with="httpStatus=${T(org.springframework.http.HttpStatus).valueOf(#response.status)}">
+        <h1 th:text="|${httpStatus} - ${httpStatus.reasonPhrase}|">404</h1>
+        <p th:utext="${errorMessage}">Error
+          java.lang.NullPointerException</p>
+        <a href="index.html" th:href="@{/index}">Back to Home
+          Page</a>
+      </div>
+    </div>
+    <div class="col"></div>
+  </div>
+
+</body>
+</html>

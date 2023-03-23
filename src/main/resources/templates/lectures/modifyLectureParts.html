@@ -1,0 +1,89 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="fragments/general.html :: bootstrap-head"></div>
+<head>
+    <title>Schedule</title>
+</head>
+<body>
+<div th:insert="fragments/general.html :: script-src"></div>
+<div th:insert="fragments/components/navbar.html :: navbar"></div>
+<div class="container"></div>
+
+<div th:unless="${#lists.isEmpty(selection)} and selection=='load'">
+
+    <form action="#" th:action="@{/lectures}" th:object="${lecture}" th:method="patch">
+
+        <input type="hidden" th:name="ownerId" th:value="${ownerId}">
+        <input type="hidden" th:name="ownername" th:value="${ownername}">
+        <input type="hidden" th:name="startDate" th:value="${startDate}">
+        <input type="hidden" th:name="finishDate" th:value="${finishDate}">
+
+        <input type="hidden" th:field="*{id}" th:value="${lectureId}">
+        <input type="hidden" th:unless="${substitute=='serialNumberPerDay'}" th:field="*{serialNumberPerDay}"
+               th:value="${serialNumberPerDay}">
+
+        <input type="hidden" th:unless="${substitute=='room'}" th:field="*{roomId}" th:id="roomId" th:value="${roomId}">
+        <input type="hidden" th:unless="${substitute=='teacher' or substitute=='courseAndTeacher'}"
+               th:field="*{teacherId}" th:value="${teacherId}">
+        <input type="hidden" th:unless="${substitute=='courseAndTeacher'}" th:field="*{courseId}"
+               th:value="${courseId}">
+
+        <input type="hidden" th:unless="${substitute=='group'}" th:field="*{groupId}" th:value="${groupId}">
+        <input type="hidden" th:field="*{date}" th:value="${date}">
+
+        <div th:each="item:${selection}">
+            <div th:switch="${substitute}">
+                <div th:case="'room'">
+                    <button type="submit" th:name="roomId" th:value="${item.getId()}">
+                        <span th:replace="'fragments/components/'+${substitute}+'/shortview'::shortview(${item})"></span>
+                    </button>
+                </div>
+                <div th:case="'teacher'">
+                    <button type="submit" th:name="teacherId" th:value="${item.getId()}">
+                        <span th:replace="'fragments/components/'+${substitute}+'/shortview'::shortview(${item})"></span>
+                    </button>
+                </div>
+                <div th:case="'courseAndTeacher'" th:with="item=${item.entrySet()[0]}">
+                    <button type="submit">
+                        <div div class="row">
+                            <div div class="col">
+                                <span th:replace="fragments/components/teacher/shortview::shortview(${item.getKey()})"></span>
+                                <input type="hidden" th:name="teacherId" th:value="${item.getKey().getId()}">
+                            </div>
+                            <div div class="col">
+                                <span th:replace="fragments/components/course/shortview::shortview(${item.getValue()})"></span>
+                                <input type="hidden" th:name="courseId" th:value="${item.getValue().getId()}">
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                <div th:case="'group'">
+                    <button type="submit" th:name="groupId" th:value="${item.getId()}">
+                        <span th:replace="'fragments/components/'+${substitute}+'/shortview'::shortview(${item})"></span>
+                    </button>
+                </div>
+                <div th:case="*">
+                    <button type="submit">
+                        <span th:text="'in the lectures/modifyWithinLecture is conteining variable substitute = ' + ${substitute}"></span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<div th:if="${#lists.isEmpty(selection)}">
+    hello! we couldn't find information that you want.Come back and help yourself please
+    <button type="submit">
+        <span th:text="'came back to another action'">text</span>
+    </button>
+</div>
+
+</body>
+</html>

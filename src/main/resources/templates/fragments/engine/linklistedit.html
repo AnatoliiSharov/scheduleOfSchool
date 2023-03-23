@@ -1,0 +1,53 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:th="http://www.thymeleaf.org">
+
+<div
+        th:fragment="addAndRemoveFewAssetsInOwner( ownername, owner, assetname, assets, ownedassets)">
+
+    <div class="row">
+        <div class="col">
+
+            <form th:method="PATCH"
+                  th:action="@{/{ownername}s/{id}/add(ownername=${ownername}, id=${owner.getId()})}">
+                <input type="hidden" th:name="${ownername}+'Id'"
+                       th:value="${owner.getId()}" class="form-control"
+                       aria-describedby="input-asset-add">
+                <div th:each="asset:${assets}"
+                     th:unless="${ownedassets.contains(asset)}">
+                    <div class="input-group mb-1">
+                <span class="input-group-text" id="input-asset-add"
+                      th:insert="'fragments/components/'+${assetname}+'/shortview.html' :: shortview (${asset})">show asset</span>
+                        <input type="hidden" th:name="${assetname}+'Id'"
+                               th:value="${asset.getId()}" class="form-control"
+                               aria-describedby="input-asset-add">
+                        <input type="submit" th:value="add" class="form-control"
+                               aria-describedby="input-asset-add">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col">
+            <form th:method="PATCH"
+                  th:action="@{/{ownername}s/{id}/remove(ownername=${ownername}, id=${owner.getId()})}">
+                <input type="hidden" th:name="${ownername}+'Id'"
+                       th:value="${owner.getId()}">
+                <div th:each="asset:${assets}"
+                     th:if="${ownedassets.contains(asset)}">
+                    <div class="input-group mb-1">
+                <span class="input-group-text" id="input-asset-remove"
+                      th:insert="'fragments/components/'+${assetname}+'/shortview.html' :: shortview (${asset})">show asset</span>
+                        <input
+                                type="hidden" th:name="${assetname}+'Id'"
+                                th:value="${asset.getId()}" class="form-control"
+                                aria-describedby="input-asset-remove"> <input
+                            type="submit" th:value="remove" class="form-control"
+                            aria-describedby="input-asset-remove">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
